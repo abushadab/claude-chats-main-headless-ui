@@ -7,11 +7,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface Author {
-  id: string;
   name: string;
   avatar: string;
   type: 'current_user' | 'ai-agent' | 'human';
-  subType?: string;
+  subType?: 'claude' | 'gemini' | 'openai';
 }
 
 interface Message {
