@@ -697,7 +697,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
               </div>
             </div>
           ) : (
-            filteredMessages.map((message, index) => {
+            {filteredMessages.map((message, index) => {
             const isConsecutive = 
                   index > 0 && 
                   filteredMessages[index - 1].author.name === message.author.name &&
@@ -865,8 +865,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
                   )}
               </div>
             );
-          })
-          )}
+          })}
+          )
         </div>
       </div>
 
