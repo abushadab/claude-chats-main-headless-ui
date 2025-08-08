@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Settings, PanelLeftClose, PanelLeft, Plus } from "lucide-react";
+import { Settings, PanelLeftClose, PanelLeft, Plus, CheckCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Sidebar,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Textarea } from "@/components/ui/textarea";
 import { mockProjects } from "@/data/mockData";
+import { useToast } from "@/hooks/use-toast";
 
 interface AppSidebarProps {
   selectedProjectId: string;
@@ -27,11 +28,14 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   const router = useRouter();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
+  const { toast } = useToast();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState("bg-blue-500");
+  const [isCreating, setIsCreating] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleProjectSelect = (projectId: string) => {
     // Get the first channel of the selected project
@@ -55,17 +59,46 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
 
   const handleCreateProject = () => {
     if (newProjectName.trim()) {
-      // This would normally be an API call
-      console.log('Creating project:', {
-        name: newProjectName,
-        description: newProjectDescription,
-        color: selectedColor
-      });
-      setNewProjectName('');
-      setNewProjectDescription('');
-      setSelectedColor('bg-blue-500');
-      setShowCreateModal(false);
-      // For now, just close the modal - in real app you'd create the project and redirect
+      setIsCreating(true);
+      
+      // Simulate API call
+      setTimeout(() => {
+        const projectData = {
+          id: `p${Date.now()}`,
+          name: newProjectName,
+          description: newProjectDescription,
+          color: selectedColor
+        };
+        
+        console.log('Creating project:', projectData);
+        
+        // Show success animation in modal
+        setIsCreating(false);
+        setShowSuccess(true);
+        
+        // Show success toast
+        toast({
+          title: "Project created successfully",
+          description: (
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              <span>{newProjectName} has been created</span>
+            </div>
+          ),
+        });
+        
+        // Reset and close after animation
+        setTimeout(() => {
+          setNewProjectName('');
+          setNewProjectDescription('');
+          setSelectedColor('bg-blue-500');
+          setShowSuccess(false);
+          setShowCreateModal(false);
+          
+          // In a real app, navigate to the new project
+          // router.push(`/project/${projectData.id}/channel/general`);
+        }, 1500);
+      }, 1000);
     }
   };
 
@@ -212,8 +245,29 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                 </DialogTrigger>
                 <DialogContent className="max-w-lg">
                   <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogTitle>
+                      {showSuccess ? (
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          Project Created!
+                        </div>
+                      ) : (
+                        'Create New Project'
+                      )}
+                    </DialogTitle>
                   </DialogHeader>
+                  {showSuccess ? (
+                    // Success Animation
+                    <div className="py-8 text-center">
+                      <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                        <CheckCircle className="h-8 w-8 text-green-500" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Project Created Successfully!</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {newProjectName} is ready to use
+                      </p>
+                    </div>
+                  ) : (
                   <div className="space-y-4 py-4">
                     {/* Project Name */}
                     <div className="space-y-2">
@@ -228,6 +282,7 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                             handleCreateProject();
                           }
                         }}
+                        disabled={isCreating}
                         autoFocus
                       />
                     </div>
@@ -240,6 +295,7 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                         value={newProjectDescription}
                         onChange={(e) => setNewProjectDescription(e.target.value)}
                         className="min-h-[80px] resize-none"
+                        disabled={isCreating}
                       />
                     </div>
 
@@ -260,7 +316,8 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                               backgroundColor: colorOption.color,
                               '--tw-ring-color': colorOption.color
                             } as React.CSSProperties}
-                            onClick={() => setSelectedColor(colorOption.value)}
+                            onClick={() => !isCreating && setSelectedColor(colorOption.value)}
+                            disabled={isCreating}
                             title={colorOption.name}
                           >
                             {selectedColor === colorOption.value && (
@@ -273,21 +330,35 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                       </div>
                     </div>
 
-                    <div className="flex justify-end space-x-2 pt-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowCreateModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleCreateProject}
-                        disabled={!newProjectName.trim()}
-                      >
-                        Create Project
-                      </Button>
-                    </div>
+                    {!showSuccess && (
+                      <div className="flex justify-end space-x-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowCreateModal(false)}
+                          disabled={isCreating}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleCreateProject}
+                          disabled={!newProjectName.trim() || isCreating}
+                        >
+                          {isCreating ? (
+                            <>
+                              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Create Project
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
+                  )}
                 </DialogContent>
               </Dialog>
             </div>

@@ -105,7 +105,7 @@ export function RightSidebar({
             {/* Shared Images */}
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-                <Image className="h-4 w-4 mr-2" alt="" />
+                <Image className="h-4 w-4 mr-2" />
                 Shared Images
               </h4>
               <div className="grid grid-cols-3 gap-2">

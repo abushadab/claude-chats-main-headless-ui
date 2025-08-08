@@ -11,6 +11,8 @@ import { ChannelSettingsModal } from "./modals/ChannelSettingsModal";
 import { AllImagesModal } from "./modals/AllImagesModal";
 import { AllFilesModal } from "./modals/AllFilesModal";
 import { MentionModal } from "./modals/MentionModal";
+import { MembersModal } from "./modals/MembersModal";
+import { SearchModal } from "./modals/SearchModal";
 import { RightSidebar } from "./components/RightSidebar";
 import { MessageInput } from "./components/MessageInput";
 import { ChatHeader } from "./components/ChatHeader";
@@ -38,6 +40,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
   const [showAllFilesModal, setShowAllFilesModal] = useState(false);
   const [showPinnedMessagesModal, setShowPinnedMessagesModal] = useState(false);
   const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     muteNotifications: false,
@@ -148,10 +152,22 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     }
   };
 
+  // Helper function to check if a message can be edited/deleted
+  const canEditDelete = (message: { author: { type: string } }) => {
+    return message.author.type === 'current_user' || message.author.type === 'human' || 
+           (isAdmin && message.author.type === 'ai-agent');
+  };
 
   // Keyboard shortcuts for message actions
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+F / Cmd+F for search
+      if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+        event.preventDefault();
+        setShowSearchModal(true);
+        return;
+      }
+
       // Don't trigger shortcuts when typing in inputs
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
@@ -226,13 +242,6 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     setShowAgentPicker(null);
   };
 
-  const canEditDelete = (message: { author: { type: string } }) => {
-    return message.author.type === 'current_user' || message.author.type === 'human' || 
-           (isAdmin && message.author.type === 'ai-agent');
-  };
-
-
-
 
   // Get current pinned messages for modal
   const currentPinnedMessages = getPinnedMessages();
@@ -259,6 +268,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
               }, 10);
             }
           }}
+          onShowMembers={() => setShowMembersModal(true)}
+          onShowSearch={() => setShowSearchModal(true)}
         />
 
       {/* Messages Area */}
@@ -405,6 +416,39 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
           });
           setMentionSearch('');
         }}
+      />
+
+      {/* Members Modal */}
+      <MembersModal 
+        showMembersModal={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        channelName={channel.name}
+        currentUserId="current"
+        isAdmin={isAdmin}
+        onSystemMessage={(message, userName, type) => {
+          // Add system message to chat
+          const systemMessage = {
+            id: `sys-${Date.now()}`,
+            content: message,
+            author: {
+              name: userName,
+              avatar: userName.split(' ').map(n => n[0]).join('').toUpperCase(),
+              type: 'system' as const,
+            },
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            channelId: selectedChannelId,
+            systemMessageType: type,
+          };
+          setMessages(prev => [...prev, systemMessage]);
+        }}
+      />
+
+      {/* Search Modal */}
+      <SearchModal 
+        showSearchModal={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        messages={filteredMessages}
+        onJumpToMessage={scrollToMessage}
       />
     </div>
   );

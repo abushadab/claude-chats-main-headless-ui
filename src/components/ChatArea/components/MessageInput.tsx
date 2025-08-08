@@ -13,7 +13,7 @@ interface MessageInputProps {
   // Edit mode
   editingMessage: string | null;
   editContent: string;
-  setEditContent: (value: string) => void;
+  setEditContent: (value: string | ((prev: string) => string)) => void;
   handleSaveEdit: () => void;
   handleCancelEdit: () => void;
   

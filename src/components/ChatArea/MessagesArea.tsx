@@ -89,10 +89,27 @@ export function MessagesArea({
             const isConsecutive = 
               index > 0 && 
               filteredMessages[index - 1].author.name === message.author.name &&
-              filteredMessages[index - 1].timestamp === message.timestamp;
+              filteredMessages[index - 1].timestamp === message.timestamp &&
+              filteredMessages[index - 1].author.type !== 'system';
             
             const isCurrentUser = message.author.type === 'current_user';
+            const isSystemMessage = message.author.type === 'system';
             const isPinned = pinnedMessageIds.has(message.id);
+            
+            // System messages have different layout
+            if (isSystemMessage) {
+              return (
+                <div key={message.id} className="flex items-center justify-center my-4 px-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="h-px bg-border flex-1 max-w-[100px]" />
+                    <span className="font-medium">{message.author.name}</span>
+                    <span>{message.content}</span>
+                    <span className="text-muted-foreground/70">• {message.timestamp}</span>
+                    <div className="h-px bg-border flex-1 max-w-[100px]" />
+                  </div>
+                </div>
+              );
+            }
             
             return (
               <div 
@@ -105,7 +122,7 @@ export function MessagesArea({
                 className={`group relative ${isConsecutive ? 'mt-2' : 'mt-6'} px-2 py-2 transition-all duration-300 ${deletingMessages.has(message.id) ? 'opacity-0 scale-95 -translate-x-4' : ''}`}
               >
                 {/* Message Content */}
-                <div className={`relative w-[70%] ${isCurrentUser ? 'ml-auto' : 'mr-auto'} ${isPinned ? 'bg-primary/20 hover:bg-primary/25' : 'bg-muted/50 hover:bg-muted/70'} rounded-lg px-4 py-3 transition-colors flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`relative w-[70%] ${isCurrentUser ? 'ml-auto' : 'mr-auto'} ${isPinned ? 'bg-primary/20 hover:bg-primary/25' : 'bg-muted/50 hover:bg-muted/70'} rounded-lg px-4 py-3 transition-colors flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} group`}>
                   {!isConsecutive && (
                     <Avatar className={`h-8 w-8 flex-shrink-0 ${isCurrentUser ? 'ml-3' : 'mr-3'}`}>
                       <AvatarFallback className={`text-xs font-semibold ${
@@ -178,79 +195,100 @@ export function MessagesArea({
                       )}
                     </div>
                   </div>
-                </div>
-                
-                {/* Vertical Edit/Delete Actions - Positioned relative to message box */}
-                {canEditDelete(message) && (
-                  <div className={`absolute top-2 ${isCurrentUser ? 'left-[70%] ml-2' : 'right-[70%] mr-2'} opacity-0 group-hover:opacity-100 transition-opacity z-10`}>
-                    <div className="flex flex-col gap-1">
-                      {/* Agent Picker - Always reserve space */}
-                      {message.author.type === 'ai-agent' && isAdmin ? (
-                        <Popover open={showAgentPicker === message.id} onOpenChange={(open) => setShowAgentPicker(open ? message.id : null)}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 bg-background/80 hover:bg-background border border-border/50 shadow-sm"
-                            >
-                              <MoreHorizontal className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-48 p-2" align={isCurrentUser ? "end" : "start"}>
-                            <div className="space-y-1">
-                              <div className="text-xs font-semibold text-muted-foreground px-2 py-1">Switch Agent:</div>
-                              {availableAgents.map((agent) => (
-                                <Button
-                                  key={agent.id}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start h-8 px-2 text-sm"
-                                  onClick={() => handleSwitchAgent(message.id, agent)}
-                                >
-                                  <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center mr-2">
-                                    {agent.avatar}
+                  
+                  {/* Three dots menu inside message box */}
+                  {canEditDelete(message) && (
+                    <div className={`absolute top-2 ${isCurrentUser ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity z-10`}>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-muted/50 rounded"
+                          >
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                      <PopoverContent className="w-48 p-1" align={isCurrentUser ? "start" : "end"}>
+                        <div className="flex flex-col">
+                          {/* Switch Agent option for AI messages */}
+                          {message.author.type === 'ai-agent' && isAdmin && (
+                            <>
+                              <Popover open={showAgentPicker === message.id} onOpenChange={(open) => setShowAgentPicker(open ? message.id : null)}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start h-9 px-3 text-sm font-normal"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4 mr-2" />
+                                    Switch Agent
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2" side="left" align="start">
+                                  <div className="space-y-1">
+                                    <div className="text-xs font-semibold text-muted-foreground px-2 py-1">Select Agent:</div>
+                                    {availableAgents.map((agent) => (
+                                      <Button
+                                        key={agent.id}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start h-8 px-2 text-sm"
+                                        onClick={() => handleSwitchAgent(message.id, agent)}
+                                      >
+                                        <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center mr-2">
+                                          {agent.avatar}
+                                        </div>
+                                        {agent.name}
+                                      </Button>
+                                    ))}
                                   </div>
-                                  {agent.name}
-                                </Button>
-                              ))}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <div className="h-7 w-7"></div>
-                      )}
-                      
-                      {/* Pin/Unpin Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-7 w-7 p-0 bg-background/80 hover:bg-background border border-border/50 shadow-sm ${isPinned ? 'text-primary' : ''}`}
-                        onClick={() => isPinned ? handleUnpinMessage(message.id) : handlePinMessage(message.id)}
-                        title={isPinned ? 'Unpin message' : 'Pin message'}
-                      >
-                        <Pin className={`h-3 w-3 ${isPinned ? 'fill-current' : ''}`} />
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 bg-background/80 hover:bg-background border border-border/50 shadow-sm"
-                        onClick={() => handleEditMessage(message.id)}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 bg-background/80 hover:bg-red-50 hover:text-red-600 border border-border/50 shadow-sm"
-                        onClick={() => setShowDeleteModal(message.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                                </PopoverContent>
+                              </Popover>
+                              <div className="h-px bg-border my-1" />
+                            </>
+                          )}
+                          
+                          {/* Pin/Unpin option */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start h-9 px-3 text-sm font-normal"
+                            onClick={() => isPinned ? handleUnpinMessage(message.id) : handlePinMessage(message.id)}
+                          >
+                            <Pin className={`h-4 w-4 mr-2 ${isPinned ? 'fill-current text-primary' : ''}`} />
+                            {isPinned ? 'Unpin' : 'Pin'} Message
+                          </Button>
+                          
+                          {/* Edit option */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start h-9 px-3 text-sm font-normal"
+                            onClick={() => handleEditMessage(message.id)}
+                          >
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Edit Message
+                          </Button>
+                          
+                          <div className="h-px bg-border my-1" />
+                          
+                          {/* Delete option */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start h-9 px-3 text-sm font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setShowDeleteModal(message.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Message
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })

@@ -28,7 +28,7 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
     }
     
     toast({
-      title: "📌 Message pinned",
+      title: "Message pinned",
       description: `Message from ${message.author.name} has been pinned to the channel.`,
       duration: 3000,
     });
@@ -53,7 +53,7 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
     }
     
     toast({
-      title: "📌 Message unpinned",
+      title: "Message unpinned",
       description: `Message from ${message.author.name} has been unpinned.`,
       duration: 3000,
     });

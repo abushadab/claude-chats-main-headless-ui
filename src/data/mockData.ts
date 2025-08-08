@@ -22,12 +22,13 @@ export interface Message {
   author: {
     name: string;
     avatar: string;
-    type: 'current_user' | 'human' | 'ai-agent';
+    type: 'current_user' | 'human' | 'ai-agent' | 'system';
     subType?: 'claude' | 'gemini' | 'openai';
   };
   timestamp: string;
   channelId: string;
   image?: string;
+  systemMessageType?: 'user_joined' | 'user_left' | 'user_removed' | 'user_added' | 'channel_created' | 'role_changed';
 }
 
 export interface RecentUser {
@@ -108,12 +109,112 @@ export const mockRecentUsers: RecentUser[] = [
 ];
 
 export const mockMessages: Message[] = [
+  // System messages for general channel (c1)
+  {
+    id: 'sys-c1-1',
+    content: 'created this channel',
+    author: {
+      name: 'Abu Shadab',
+      avatar: 'AS',
+      type: 'system',
+    },
+    timestamp: 'Jan 10, 2024',
+    channelId: 'c1',
+    systemMessageType: 'channel_created',
+  },
+  {
+    id: 'sys-c1-2',
+    content: 'joined the channel',
+    author: {
+      name: 'Sarah Chen',
+      avatar: 'SC',
+      type: 'system',
+    },
+    timestamp: 'Jan 11, 2024',
+    channelId: 'c1',
+    systemMessageType: 'user_joined',
+  },
+  {
+    id: 'sys-c1-3',
+    content: 'joined the channel',
+    author: {
+      name: 'Alex Rodriguez',
+      avatar: 'AR',
+      type: 'system',
+    },
+    timestamp: 'Jan 12, 2024',
+    channelId: 'c1',
+    systemMessageType: 'user_joined',
+  },
+  {
+    id: 'sys-c1-4',
+    content: 'added Claude Assistant to the channel',
+    author: {
+      name: 'Abu Shadab',
+      avatar: 'AS',
+      type: 'system',
+    },
+    timestamp: 'Jan 13, 2024',
+    channelId: 'c1',
+    systemMessageType: 'user_added',
+  },
+  {
+    id: 'sys-c1-5',
+    content: 'was promoted to admin',
+    author: {
+      name: 'Sarah Chen',
+      avatar: 'SC',
+      type: 'system',
+    },
+    timestamp: '8:30 AM',
+    channelId: 'c1',
+    systemMessageType: 'role_changed',
+  },
+  // System message - channel created for development (c2)
+  {
+    id: 'sys1',
+    content: 'created this channel',
+    author: {
+      name: 'Abu Shadab',
+      avatar: 'AS',
+      type: 'system',
+    },
+    timestamp: 'Jan 15, 2024',
+    channelId: 'c2',
+    systemMessageType: 'channel_created',
+  },
+  // System message - user joined
+  {
+    id: 'sys2',
+    content: 'joined the channel',
+    author: {
+      name: 'Sarah Chen',
+      avatar: 'SC',
+      type: 'system',
+    },
+    timestamp: 'Jan 16, 2024',
+    channelId: 'c2',
+    systemMessageType: 'user_joined',
+  },
+  // System message - AI agent added
+  {
+    id: 'sys3',
+    content: 'added Monitoring Agent to the channel',
+    author: {
+      name: 'Abu Shadab',
+      avatar: 'AS',
+      type: 'system',
+    },
+    timestamp: 'Jan 17, 2024',
+    channelId: 'c2',
+    systemMessageType: 'user_added',
+  },
   {
     id: 'm1',
     content: "Hey team! I've finished implementing the new authentication flow. Can someone review the PR?",
     author: {
       name: 'Sarah Chen',
-      avatar: '👩‍💻',
+      avatar: 'SC',
       type: 'human',
     },
     timestamp: '9:42 AM',
@@ -136,7 +237,7 @@ export const mockMessages: Message[] = [
     content: "Thanks Claude! Also, I noticed some performance issues with the login endpoint. The response time is around 2.5 seconds.",
     author: {
       name: 'Sarah Chen',
-      avatar: '👩‍💻',
+      avatar: 'SC',
       type: 'human',
     },
     timestamp: '9:45 AM',
@@ -182,7 +283,7 @@ export const mockMessages: Message[] = [
     content: "Here's a screenshot of the performance metrics after the optimization:",
     author: {
       name: 'Sarah Chen',
-      avatar: '👩‍💻',
+      avatar: 'SC',
       type: 'human',
     },
     timestamp: '9:50 AM',
@@ -201,12 +302,13 @@ export const mockMessages: Message[] = [
     channelId: 'c2',
     image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
   },
+  // Messages for general channel (c1)
   {
     id: 'm5',
     content: "Good morning everyone! 🌅 Ready for another day of shipping code?",
     author: {
       name: 'Alex Rodriguez',
-      avatar: '👨‍💼',
+      avatar: 'AR',
       type: 'human',
     },
     timestamp: '9:47 AM',
@@ -225,11 +327,80 @@ export const mockMessages: Message[] = [
     channelId: 'c1',
   },
   {
+    id: 'sys-c1-6',
+    content: 'joined the channel',
+    author: {
+      name: 'Emily Johnson',
+      avatar: 'EJ',
+      type: 'system',
+    },
+    timestamp: '9:49 AM',
+    channelId: 'c1',
+    systemMessageType: 'user_joined',
+  },
+  {
+    id: 'm7a',
+    content: "Welcome to the team Emily! Great to have you onboard.",
+    author: {
+      name: 'Abu Shadab',
+      avatar: 'AS',
+      type: 'current_user',
+    },
+    timestamp: '9:50 AM',
+    channelId: 'c1',
+  },
+  {
+    id: 'm8a',
+    content: "Thanks everyone! Excited to be here and contribute to the project.",
+    author: {
+      name: 'Emily Johnson',
+      avatar: 'EJ',
+      type: 'human',
+    },
+    timestamp: '9:51 AM',
+    channelId: 'c1',
+  },
+  {
+    id: 'sys-c1-7',
+    content: 'left the channel',
+    author: {
+      name: 'Michael Park',
+      avatar: 'MP',
+      type: 'system',
+    },
+    timestamp: '10:15 AM',
+    channelId: 'c1',
+    systemMessageType: 'user_left',
+  },
+  {
+    id: 'sys-c1-8',
+    content: 'was removed from the channel',
+    author: {
+      name: 'John Smith',
+      avatar: 'JS',
+      type: 'system',
+    },
+    timestamp: '10:30 AM',
+    channelId: 'c1',
+    systemMessageType: 'user_removed',
+  },
+  {
+    id: 'm9a',
+    content: "Let's focus on the sprint goals for this week. We have some important deliverables.",
+    author: {
+      name: 'Sarah Chen',
+      avatar: 'SC',
+      type: 'human',
+    },
+    timestamp: '10:45 AM',
+    channelId: 'c1',
+  },
+  {
     id: 'm7',
     content: "I've been monitoring our deployment metrics and everything looks healthy. The new caching layer is performing excellently - 40% reduction in API response times! 🚀",
     author: {
       name: 'DevOps Agent',
-      avatar: '⚙️',
+      avatar: 'DA',
       type: 'ai-agent',
     },
     timestamp: '9:50 AM',

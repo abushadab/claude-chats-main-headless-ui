@@ -11,7 +11,8 @@ interface PinnedMessage {
   author: {
     name: string;
     avatar: string;
-    type: 'current_user' | 'ai-agent' | 'human';
+    type: 'current_user' | 'human' | 'ai-agent' | 'system';
+    subType?: 'claude' | 'gemini' | 'openai';
   };
   timestamp: string;
   pinnedBy: string;

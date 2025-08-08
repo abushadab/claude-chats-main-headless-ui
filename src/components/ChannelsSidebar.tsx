@@ -1,11 +1,14 @@
 "use client"
 
+import { useState } from "react";
 import { Hash, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { mockProjects, mockRecentUsers } from "@/data/mockData";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { CreateChannelModal } from "@/components/ChatArea/modals/CreateChannelModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChannelsSidebarProps {
   selectedProjectId: string;
@@ -14,6 +17,8 @@ interface ChannelsSidebarProps {
 
 export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: ChannelsSidebarProps) {
   const router = useRouter();
+  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
+  const { toast } = useToast();
   const project = mockProjects.find(p => p.id === selectedProjectId);
   
   if (!project) return null;
@@ -64,8 +69,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
                       size="sm" 
                       className="w-full justify-start h-8 px-2 text-sm"
                       onClick={() => {
-                        // TODO: Implement create channel
-                        console.log('Create channel');
+                        setShowCreateChannelModal(true);
                       }}
                     >
                       <Hash className="h-4 w-4 mr-2" />
@@ -131,6 +135,27 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
           </div>
         </div>
       </ScrollArea>
+
+      {/* Create Channel Modal */}
+      <CreateChannelModal 
+        showCreateChannelModal={showCreateChannelModal}
+        onClose={() => setShowCreateChannelModal(false)}
+        projectId={selectedProjectId}
+        projectName={project.name}
+        onChannelCreated={(channel) => {
+          // Add the new channel to the project (in a real app, this would be an API call)
+          console.log('Channel created:', channel);
+          
+          // Navigate to the new channel
+          router.push(`/project/${selectedProjectId}/channel/${channel.id}`);
+          
+          // Show system message in the new channel
+          toast({
+            title: "Channel created",
+            description: `#${channel.name} has been created successfully`,
+          });
+        }}
+      />
     </div>
   );
 }
