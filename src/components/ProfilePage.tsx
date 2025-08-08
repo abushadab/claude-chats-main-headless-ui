@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { User, Mail, Calendar, MapPin, Edit3, Save, X, Lock, Key } from "lucide-react";
+import { Mail, Calendar, MapPin, Edit3, Save, Lock, Key } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";

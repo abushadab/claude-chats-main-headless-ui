@@ -2,10 +2,11 @@
 
 import { Button } from "@/components/ui/headless-button";
 import { Hash, Users, Info } from "lucide-react";
+import type { Channel, Project } from "@/data/mockData";
 
 interface ChatHeaderProps {
-  channel: any;
-  project: any;
+  channel: Channel;
+  project: Project;
   showRightSidebar: boolean;
   onToggleSidebar: () => void;
 }

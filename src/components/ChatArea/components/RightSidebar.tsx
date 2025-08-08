@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { X, Image, FileText, Settings, Pin, Download, ZoomIn } from "lucide-react";
@@ -106,7 +105,7 @@ export function RightSidebar({
             {/* Shared Images */}
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-                <Image className="h-4 w-4 mr-2" />
+                <Image className="h-4 w-4 mr-2" alt="" />
                 Shared Images
               </h4>
               <div className="grid grid-cols-3 gap-2">

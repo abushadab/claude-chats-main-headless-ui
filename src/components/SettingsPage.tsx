@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Bell, Moon, Monitor, Sun, Shield } from "lucide-react";
-import { Button } from "@/components/ui/headless-button";
 import { Switch } from "@/components/ui/switch";
 
 export function SettingsPage() {

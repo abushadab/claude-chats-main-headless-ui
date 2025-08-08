@@ -36,7 +36,7 @@ export function AllImagesModal({
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Image className="h-5 w-5 mr-2" />
+            <Image className="h-5 w-5 mr-2" alt="" />
             Shared Images ({sharedImages.length})
           </DialogTitle>
         </DialogHeader>

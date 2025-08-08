@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { ChevronDown, User, LogOut, Bell, Check, X } from "lucide-react";
+import { ChevronDown, User, LogOut, Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Button } from "@/components/ui/headless-button";

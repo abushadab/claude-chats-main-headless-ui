@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Button } from "@/components/ui/headless-button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { AtSign, Smile, Image, X, Send } from "lucide-react";
+import { AtSign, Smile, Image, X } from "lucide-react";
+import type { Message } from "@/data/mockData";
 
 interface MessageInputProps {
   // Message state
@@ -30,7 +30,7 @@ interface MessageInputProps {
   setShowMentionModal: (show: boolean) => void;
   
   // Message being edited info
-  filteredMessages: any[];
+  filteredMessages: Message[];
   
   // Emojis
   mockEmojis: string[];
@@ -63,11 +63,11 @@ export function MessageInput({
     // Handle double Escape to clear message
     if (e.key === 'Escape') {
       const now = Date.now();
-      const lastEscape = (e.target as any).lastEscape || 0;
+      const lastEscape = (e.target as HTMLElement & { lastEscape?: number }).lastEscape || 0;
       if (now - lastEscape < 300) { // Double escape within 300ms
         setNewMessage('');
       }
-      (e.target as any).lastEscape = now;
+      (e.target as HTMLElement & { lastEscape?: number }).lastEscape = now;
     }
   };
 
@@ -132,7 +132,7 @@ export function MessageInput({
             </Button>
           </div>
           <div className="text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1 mb-2">
-            Original: "{truncatedContent}"
+            Original: &ldquo;{truncatedContent}&rdquo;
           </div>
           <div className="text-xs text-muted-foreground">
             Press Enter to save, Escape to cancel

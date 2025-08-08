@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { Settings, PanelLeftClose, PanelLeft, Plus } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -27,7 +25,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   

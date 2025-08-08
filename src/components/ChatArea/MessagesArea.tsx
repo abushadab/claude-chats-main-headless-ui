@@ -1,30 +1,22 @@
 "use client"
 
-import { useRef } from "react";
 import { Hash, Edit3, Trash2, MoreHorizontal, Pin } from "lucide-react";
 import { Button } from "@/components/ui/headless-button";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import type { Channel, Message } from "@/data/mockData";
 
-interface Author {
+interface Agent {
+  id: string;
   name: string;
   avatar: string;
-  type: 'current_user' | 'ai-agent' | 'human';
-  subType?: 'claude' | 'gemini' | 'openai';
-}
-
-interface Message {
-  id: string;
-  content: string;
-  author: Author;
-  timestamp: string;
-  channelId: string;
-  image?: string;
+  type: string;
+  subType: string;
 }
 
 interface MessagesAreaProps {
   filteredMessages: Message[];
-  channel: any;
+  channel: Channel;
   selectedChannelId: string;
   pinnedMessageIds: Set<string>;
   editedMessages: Set<string>;
@@ -32,13 +24,13 @@ interface MessagesAreaProps {
   showAgentPicker: string | null;
   isAdmin: boolean;
   messageRefs: React.MutableRefObject<{[key: string]: HTMLDivElement}>;
-  availableAgents: any[];
+  availableAgents: Agent[];
   getRandomQuote: (channelId: string) => { quote: string; author: string };
-  canEditDelete: (message: any) => boolean;
+  canEditDelete: (message: Message) => boolean;
   handlePinMessage: (messageId: string) => void;
   handleUnpinMessage: (messageId: string) => void;
   handleEditMessage: (messageId: string) => void;
-  handleSwitchAgent: (messageId: string, agent: any) => void;
+  handleSwitchAgent: (messageId: string, agent: Agent) => void;
   setShowDeleteModal: (messageId: string | null) => void;
   setLightboxImage: (image: string | null) => void;
   setShowAgentPicker: (messageId: string | null) => void;
@@ -80,7 +72,7 @@ export function MessagesArea({
               </h3>
               <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
                 <blockquote className="text-lg italic text-muted-foreground leading-relaxed mb-4">
-                  "{getRandomQuote(selectedChannelId).quote}"
+                  &ldquo;{getRandomQuote(selectedChannelId).quote}&rdquo;
                 </blockquote>
                 <cite className="text-sm font-medium text-primary">
                   — {getRandomQuote(selectedChannelId).author}
@@ -174,13 +166,13 @@ export function MessagesArea({
                           </div>
                         ))}
                       </div>
-                      {(message as any).image && (
+                      {message.image && (
                         <div className={`mt-2 ${isCurrentUser ? 'flex justify-end' : 'flex justify-start'}`}>
                           <img 
-                            src={(message as any).image} 
+                            src={message.image} 
                             alt="Uploaded image" 
                             className="max-w-40 max-h-28 rounded-lg border border-border object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => setLightboxImage((message as any).image)}
+                            onClick={() => setLightboxImage(message.image || null)}
                           />
                         </div>
                       )}

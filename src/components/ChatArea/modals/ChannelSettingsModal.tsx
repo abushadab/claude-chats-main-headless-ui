@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Settings } from "lucide-react";
+import type { Channel } from "@/data/mockData";
 
 // Custom Toggle Switch Component (preserved from original)
 const ToggleSwitch = ({ checked, onCheckedChange, disabled = false }: { 
@@ -43,7 +44,7 @@ interface NotificationSettings {
 interface ChannelSettingsModalProps {
   showChannelSettingsModal: boolean;
   onClose: () => void;
-  channel: any;
+  channel: Channel;
   notificationSettings: NotificationSettings;
   onNotificationSettingsChange: (settings: NotificationSettings) => void;
   onSave: () => void;

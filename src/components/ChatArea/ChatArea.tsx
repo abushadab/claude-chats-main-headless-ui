@@ -178,7 +178,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [filteredMessages]);
+  }, [filteredMessages, canEditDelete, handleEditMessage, handleSoftDeleteMessage]);
 
   if (!project || !channel) {
     return <EmptyChannelState />;

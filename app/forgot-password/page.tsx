@@ -38,11 +38,11 @@ export default function ForgotPasswordPage() {
             </div>
             <h2 className="text-3xl font-bold text-foreground">Check your email</h2>
             <p className="mt-4 text-muted-foreground">
-              We've sent a password reset link to{" "}
+              We&apos;ve sent a password reset link to{" "}
               <span className="font-medium text-foreground">{email}</span>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              If you don't see it, check your spam folder.
+              If you don&apos;t see it, check your spam folder.
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
           {/* Help */}
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Didn't receive the email?{" "}
+              Didn&apos;t receive the email?{" "}
               <button
                 onClick={handleResetPassword}
                 className="font-medium text-primary hover:text-primary/80 transition-colors"
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
           </div>
           <h2 className="text-3xl font-bold text-foreground">Forgot password?</h2>
           <p className="mt-2 text-muted-foreground">
-            No worries, we'll send you reset instructions.
+            No worries, we&apos;ll send you reset instructions.
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export default function ForgotPasswordPage() {
         {/* Alternative actions */}
         <div className="text-center pt-6 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/register"
               className="font-medium text-primary hover:text-primary/80 transition-colors"

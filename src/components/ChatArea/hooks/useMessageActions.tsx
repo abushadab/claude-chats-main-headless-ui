@@ -1,11 +1,12 @@
 import React, { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
+import type { Message } from "@/data/mockData";
 
-export function useMessageActions(messages: any[], setMessages: React.Dispatch<React.SetStateAction<any[]>>) {
+export function useMessageActions(messages: Message[], setMessages: React.Dispatch<React.SetStateAction<Message[]>>) {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
-  const [deletedMessage, setDeletedMessage] = useState<{id: string, message: any, timeout: NodeJS.Timeout} | null>(null);
+  const [deletedMessage, setDeletedMessage] = useState<{id: string, message: Message, timeout: NodeJS.Timeout} | null>(null);
   const [editedMessages, setEditedMessages] = useState<Set<string>>(new Set());
   const [deletingMessages, setDeletingMessages] = useState<Set<string>>(new Set());
   const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set(['m1', 'm2', 'm5']));
