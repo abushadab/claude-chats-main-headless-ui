@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: Arial, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 217 32% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 217 32% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 32% 17%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 217 91% 55%;
+    --secondary: 217 91% 95%;
+    --secondary-foreground: 217 32% 17%;
+    --secondary-hover: 217 91% 90%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 14% 34%;
+    --accent: 217 91% 95%;
+    --accent-foreground: 217 32% 17%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 20% 84%;
+    --input: 217 20% 84%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 217 91% 70%;
+    --chart-3: 217 91% 45%;
+    --chart-4: 217 91% 80%;
+    --chart-5: 217 91% 35%;
+    --radius: 0.5rem;
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 217 32% 17%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 217 91% 95%;
+    --sidebar-accent-foreground: 217 32% 17%;
+    --sidebar-border: 217 20% 84%;
+    --sidebar-ring: 217 91% 60%;
+    --chat-bubble-user: 217 91% 60%;
+    --chat-bubble-agent: 217 91% 45%;
+    --chat-hover: 217 91% 96%;
+  }
+  .dark {
+    --background: 217 32% 8%;
+    --foreground: 217 20% 90%;
+    --card: 217 32% 10%;
+    --card-foreground: 217 20% 90%;
+    --popover: 217 32% 10%;
+    --popover-foreground: 217 20% 90%;
+    --primary: 217 91% 70%;
+    --primary-foreground: 217 32% 8%;
+    --primary-hover: 217 91% 75%;
+    --secondary: 217 32% 15%;
+    --secondary-foreground: 217 20% 90%;
+    --secondary-hover: 217 32% 20%;
+    --muted: 217 32% 15%;
+    --muted-foreground: 217 10% 60%;
+    --accent: 217 32% 15%;
+    --accent-foreground: 217 20% 90%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 32% 20%;
+    --input: 217 32% 20%;
+    --ring: 217 91% 70%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 217 91% 70%;
+    --chart-3: 217 91% 45%;
+    --chart-4: 217 91% 80%;
+    --chart-5: 217 91% 35%;
+    --sidebar-background: 217 32% 12%;
+    --sidebar-foreground: 217 20% 90%;
+    --sidebar-primary: 217 91% 70%;
+    --sidebar-primary-foreground: 217 32% 8%;
+    --sidebar-accent: 217 32% 20%;
+    --sidebar-accent-foreground: 217 20% 90%;
+    --sidebar-border: 217 32% 20%;
+    --sidebar-ring: 217 91% 70%;
+    --chat-bubble-user: 217 91% 65%;
+    --chat-bubble-agent: 217 91% 50%;
+    --chat-hover: 217 32% 18%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
