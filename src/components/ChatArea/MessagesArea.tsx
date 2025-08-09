@@ -92,7 +92,9 @@ export function MessagesArea({
               filteredMessages[index - 1].created_at === message.created_at &&
               filteredMessages[index - 1].type !== 'system';
             
-            const isCurrentUser = message.type === 'text'; // TODO: Implement current user detection
+            // For now, consider non-agent messages as current user messages
+            // TODO: Implement proper current user detection with auth context
+            const isCurrentUser = !message.from_agent && message.user_id !== null;
             const isSystemMessage = message.type === 'system';
             const isPinned = pinnedMessageIds.has(message.message_id);
             
@@ -130,7 +132,10 @@ export function MessagesArea({
                           ? 'bg-orange-500 text-white' 
                           : 'bg-primary text-primary-foreground'
                       }`}>
-                        {(message.username || message.user?.username || 'U').split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {(() => {
+                          const name = message.username || message.user?.username || message.full_name || message.from_agent || 'Unknown User';
+                          return name.replace(/-/g, ' ').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                        })()}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -143,7 +148,7 @@ export function MessagesArea({
                             ? 'text-orange-600' 
                             : 'text-foreground'
                         }`}>
-                          {message.username || message.user?.username || 'Unknown User'}
+                          {message.username || message.user?.username || message.full_name || (message.from_agent ? message.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User')}
                         </span>
                         {message.from_agent && (
                           <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">

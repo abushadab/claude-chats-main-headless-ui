@@ -21,6 +21,7 @@ export enum ChannelType {
 export interface Channel {
   channel_id: string;
   name: string;
+  slug: string;              // URL-friendly slug for routing
   description?: string;
   project_id: string;        // UUID linking to project
   project_name: string;      // "Wisdom Network" (joined from projects table)
@@ -33,7 +34,14 @@ export interface Channel {
   joined_at?: string;        // When user joined (can be null)
   member_count: string;      // Note: API returns this as string, not number
   unread_count?: number;
-  last_message?: Message;
+  last_message?: {           // Preview of last message
+    message_id: string;
+    content: string;
+    from_agent?: string;
+    user_id?: string;
+    username?: string;
+    created_at: string;
+  };
   is_member?: boolean;
   last_message_at?: string;  // Last activity timestamp
   
@@ -46,6 +54,8 @@ export interface Message {
   content: string;
   user_id: string;
   username?: string;
+  full_name?: string;
+  avatar_url?: string;
   user?: User;
   channel_id: string;
   parent_message_id?: string;

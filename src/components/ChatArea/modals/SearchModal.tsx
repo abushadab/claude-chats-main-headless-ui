@@ -49,7 +49,7 @@ export function SearchModal({
     messages.forEach(msg => {
       // Skip system messages and messages from agents
       if (msg.type !== 'system' && !msg.from_agent) {
-        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        const authorName = msg.username || msg.user?.username || msg.full_name || (msg.from_agent ? msg.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
         const authorInfo = {
           name: authorName,
           type: msg.from_agent ? 'ai-agent' : 'user',
@@ -69,7 +69,7 @@ export function SearchModal({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       results = results.filter(msg => {
-        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        const authorName = msg.username || msg.user?.username || msg.full_name || (msg.from_agent ? msg.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
         return msg.content.toLowerCase().includes(query) ||
                authorName.toLowerCase().includes(query);
       });
@@ -78,7 +78,7 @@ export function SearchModal({
     // Filter by selected author
     if (selectedAuthor) {
       results = results.filter(msg => {
-        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        const authorName = msg.username || msg.user?.username || msg.full_name || (msg.from_agent ? msg.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
         return authorName === selectedAuthor;
       });
     }

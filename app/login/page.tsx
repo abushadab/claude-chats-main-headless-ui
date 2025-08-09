@@ -35,7 +35,7 @@ export default function LoginPage() {
     }
     // Clear validation errors when user types
     setValidationErrors({});
-  }, [formData]);
+  }, [formData, authError, clearError]);
 
   const validateForm = (): boolean => {
     const errors: Partial<LoginCredentials> = {};
@@ -75,7 +75,7 @@ export default function LoginPage() {
       
       await login(credentials);
       // Redirect handled by auth context
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error);
       // Error is displayed via authError from context
     } finally {

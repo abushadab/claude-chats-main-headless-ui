@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjects } from "@/hooks/useProjects";
-import { useChannels } from "@/hooks/useChannels";
 import { useToast } from "@/hooks/use-toast";
+import type { Project } from "@/types/project.types";
 
 interface AppSidebarProps {
   selectedProjectId: string;
@@ -33,7 +33,6 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   
   // Use real projects API
   const { projects, createProject } = useProjects();
-  const { channels } = useChannels();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -42,15 +41,28 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleProjectSelect = (projectId: string) => {
-    // Get the first channel of the selected project
-    const projectChannels = channels.filter(c => c.project_id === projectId);
-    if (projectChannels.length > 0) {
-      const firstChannelId = projectChannels[0].channel_id;
-      router.push(`/project/${projectId}/channel/${firstChannelId}`);
-    } else {
-      // No channels in project, just navigate to project
-      router.push(`/project/${projectId}/channel/general`);
+  const handleProjectSelect = async (projectId: string) => {
+    // Find the project to get its slug
+    const project = projects.find(p => p.project_id === projectId);
+    if (!project) return;
+    
+    // Fetch channels for this specific project only
+    try {
+      const { chatService } = await import('@/services/chat.service');
+      const projectChannels = await chatService.getChannels(projectId);
+      
+      if (projectChannels.length > 0) {
+        const firstChannel = projectChannels[0];
+        const channelSlug = firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-');
+        router.push(`/project/${project.slug}/channel/${channelSlug}`);
+      } else {
+        // No channels in project, just navigate to default channel
+        router.push(`/project/${project.slug}/channel/general`);
+      }
+    } catch (error) {
+      console.error('Error fetching project channels:', error);
+      // Fallback to general channel
+      router.push(`/project/${project.slug}/channel/general`);
     }
   };
 
@@ -93,13 +105,11 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
           ),
         });
 
-        // Navigate to the new project if it has channels
-        const projectChannels = channels.filter(c => c.project_id === newProject.project_id);
-        if (projectChannels.length > 0) {
-          setTimeout(() => {
-            router.push(`/project/${newProject.project_id}/channel/${projectChannels[0].channel_id}`);
-          }, 1500);
-        }
+        // Navigate to the new project after a short delay
+        setTimeout(() => {
+          // New projects typically start with a general channel
+          router.push(`/project/${newProject.slug}/channel/general`);
+        }, 1500);
         
         // Reset and close after animation
         setTimeout(() => {
@@ -124,42 +134,33 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
     return name.split(' ').map(word => word[0]).join('').toUpperCase();
   };
 
-  // Define color schemes for different projects
-  const projectColors: Record<string, { bg: string; hover: string; text: string }> = {
-    '1': { // LaunchDB
-      bg: 'bg-blue-500',
-      hover: 'hover:bg-blue-600',
-      text: 'text-white'
-    },
-    '2': { // Wisdom Network  
-      bg: 'bg-purple-500',
-      hover: 'hover:bg-purple-600',
-      text: 'text-white'
-    },
-    '3': { // Data Pipeline
-      bg: 'bg-green-500',
-      hover: 'hover:bg-green-600',
-      text: 'text-white'
-    },
-    '4': { // Mobile App
-      bg: 'bg-orange-500',
-      hover: 'hover:bg-orange-600',
-      text: 'text-white'
-    },
-    '5': { // Analytics Hub
-      bg: 'bg-pink-500',
-      hover: 'hover:bg-pink-600',
-      text: 'text-white'
-    },
-    'default': {
-      bg: 'bg-gray-500',
-      hover: 'hover:bg-gray-600',
-      text: 'text-white'
-    }
+  // Convert color hex to Tailwind class
+  const getProjectColorClass = (color?: string) => {
+    if (!color) return 'bg-gray-500';
+    
+    // Map common colors to Tailwind classes
+    const colorMap: Record<string, string> = {
+      '#3b82f6': 'bg-blue-500',
+      '#8b5cf6': 'bg-purple-500',
+      '#10b981': 'bg-green-500',
+      '#f97316': 'bg-orange-500',
+      '#ec4899': 'bg-pink-500',
+      '#ef4444': 'bg-red-500',
+      '#eab308': 'bg-yellow-500',
+      '#6366f1': 'bg-indigo-500',
+    };
+    
+    return colorMap[color] || 'bg-gray-500';
   };
 
-  const getProjectColors = (projectId: string) => {
-    return projectColors[projectId] || projectColors.default;
+  const getProjectColors = (project: Project) => {
+    const bgClass = getProjectColorClass(project.color);
+    return {
+      bg: bgClass,
+      hover: bgClass.replace('500', '600'),
+      text: 'text-white',
+      hex: project.color || '#6b7280'
+    };
   };
 
   return (
@@ -198,40 +199,48 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
               {projects.map((project) => {
                 const isSelected = selectedProjectId === project.project_id;
                 const initials = getProjectInitials(project.name);
+                const colors = getProjectColors(project);
+                const hasUnread = project.unread_count && project.unread_count > 0;
                 
                 return (
                   <SidebarMenuItem key={project.project_id}>
                     <SidebarMenuButton 
                       className={collapsed 
-                        ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center mx-auto rounded-lg transition-colors hover:bg-transparent`
-                        : `w-full h-10 justify-start px-3 hover:bg-transparent ${
+                        ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center mx-auto rounded-lg transition-colors hover:bg-transparent relative`
+                        : `w-full h-10 justify-start px-3 hover:bg-transparent relative ${
                             isSelected ? 'bg-primary/20' : ''
                           }`
                       }
                       onClick={() => handleProjectSelect(project.project_id)}
                     >
                       {collapsed ? (
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${getProjectColors(project.project_id).bg} ${
-                          isSelected 
-                            ? `ring-2 ring-offset-2 ring-offset-background` 
-                            : `opacity-60`
-                        }`} style={isSelected ? {
-                          '--tw-ring-color': getProjectColors(project.project_id).bg === 'bg-blue-500' ? '#3b82f6' :
-                                             getProjectColors(project.project_id).bg === 'bg-purple-500' ? '#8b5cf6' :
-                                             getProjectColors(project.project_id).bg === 'bg-green-500' ? '#10b981' :
-                                             getProjectColors(project.project_id).bg === 'bg-orange-500' ? '#f97316' :
-                                             getProjectColors(project.project_id).bg === 'bg-pink-500' ? '#ec4899' : '#6b7280'
-                        } as React.CSSProperties : {}}>
-                          <span className={`text-sm font-bold ${getProjectColors(project.project_id).text}`}>
-                            {initials}
-                          </span>
-                        </div>
+                        <>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${colors.bg} ${
+                            isSelected 
+                              ? `ring-2 ring-offset-2 ring-offset-background` 
+                              : `opacity-60`
+                          }`} style={isSelected ? {
+                            '--tw-ring-color': colors.hex
+                          } as React.CSSProperties : {}}>
+                            <span className={`text-sm font-bold ${colors.text}`}>
+                              {initials}
+                            </span>
+                          </div>
+                          {hasUnread && (
+                            <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-background" />
+                          )}
+                        </>
                       ) : (
-                        <div className="flex items-center">
-                          <div className={`w-7 h-7 ${getProjectColors(project.project_id).bg} ${getProjectColors(project.project_id).text} rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
+                        <div className="flex items-center w-full">
+                          <div className={`w-7 h-7 ${colors.bg} ${colors.text} rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
                             {initials}
                           </div>
-                          <span className="ml-3 truncate">{project.name}</span>
+                          <span className="ml-3 truncate flex-1">{project.name}</span>
+                          {hasUnread && (
+                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                              {project.unread_count}
+                            </span>
+                          )}
                         </div>
                       )}
                     </SidebarMenuButton>

@@ -27,6 +27,21 @@ export interface Project {
   owner_username: string;    // Owner's username
   owner_name: string;        // Owner's full name
   owner_avatar?: string;     // Owner's avatar
+  
+  // New fields from optimized API
+  color?: string;            // UI theme color for project (hex format)
+  unread_count?: number;     // Total unread messages in project (now a number, not string)
+  last_activity?: string;    // Last activity timestamp for sorting
+}
+
+export interface ActiveMember {
+  user_id: string;
+  username: string;
+  full_name: string;
+  email?: string;
+  avatar_url?: string;
+  status: 'online' | 'offline' | 'away' | 'busy';
+  last_seen?: string;
 }
 
 export interface ProjectMember {

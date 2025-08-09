@@ -65,8 +65,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     deleteMessage: deleteMessageAPI 
   } = useMessages(selectedChannelId);
   
-  // Use real channels API to get channel info
-  const { channels } = useChannels();
+  // Fetch channels only for the current project (more efficient)
+  const { channels } = useChannels(selectedProjectId);
 
   // Use the message actions hook
   const {
@@ -230,7 +230,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     return filteredMessages
       .filter(msg => pinnedMessageIds.has(msg.message_id))
       .map(msg => {
-        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        const authorName = msg.username || msg.user?.username || msg.full_name || (msg.from_agent ? msg.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
         const authorAvatar = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
         
         return {

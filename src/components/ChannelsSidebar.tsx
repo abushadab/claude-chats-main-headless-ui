@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { mockRecentUsers } from "@/data/mockData";
 import { useChannels } from "@/hooks/useChannels";
 import { useProjects } from "@/hooks/useProjects";
+import type { Channel } from "@/types/chat.types";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -15,21 +16,26 @@ import { useToast } from "@/hooks/use-toast";
 interface ChannelsSidebarProps {
   selectedProjectId: string;
   selectedChannelId: string;
+  channels?: Channel[]; // Pre-fetched channels from parent
 }
 
-export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: ChannelsSidebarProps) {
+export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels: preFetchedChannels }: ChannelsSidebarProps) {
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
   
-  // Use real channels API filtered by project
+  // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
+  // Pass a special value 'skip' to indicate we don't want to fetch
   const { 
-    channels: projectChannels, 
+    channels: fetchedChannels, 
     isLoading, 
     error, 
     createChannel, 
     refreshChannels 
-  } = useChannels(selectedProjectId);
+  } = useChannels(preFetchedChannels ? 'skip' as any : selectedProjectId);
+  
+  // Use pre-fetched channels if available
+  const projectChannels = preFetchedChannels || fetchedChannels;
 
   // Get real projects data
   const { projects } = useProjects();
@@ -45,8 +51,9 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
     slug: 'unknown'
   };
 
-  const handleChannelSelect = (channelId: string) => {
-    router.push(`/project/${selectedProjectId}/channel/${channelId}`);
+  const handleChannelSelect = (channel: Channel) => {
+    const channelSlug = channel.slug || channel.name.toLowerCase().replace(/\s+/g, '-');
+    router.push(`/project/${project.slug}/channel/${channelSlug}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -67,7 +74,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
       const newChannel = await createChannel(channelData);
       
       // Navigate to the new channel
-      router.push(`/project/${selectedProjectId}/channel/${newChannel.channel_id}`);
+      const channelSlug = newChannel.slug || newChannel.name.toLowerCase().replace(/\s+/g, '-');
+      router.push(`/project/${project.slug}/channel/${channelSlug}`);
       
       // Show success message
       toast({
@@ -164,7 +172,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
                         ? 'bg-primary/20 hover:bg-primary/25 text-foreground' 
                         : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
                     }`}
-                    onClick={() => handleChannelSelect(channel.channel_id)}
+                    onClick={() => handleChannelSelect(channel)}
                   >
                     <Hash className="h-3 w-3 mr-2" />
                     <span className="text-sm">{channel.name}</span>

@@ -26,6 +26,12 @@ export function useChannels(projectId?: string): UseChannelsReturn {
 
   // Load channels from API
   const loadChannels = useCallback(async () => {
+    // Skip loading if projectId is 'skip' (used when channels are pre-fetched)
+    if (projectId === 'skip') {
+      setIsLoading(false);
+      return;
+    }
+    
     console.log('🔄 Loading channels...', projectId ? `for project: ${projectId}` : '(all)');
     try {
       setIsLoading(true);

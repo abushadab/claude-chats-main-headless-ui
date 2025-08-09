@@ -197,12 +197,13 @@ class ChatService {
   // =================== MESSAGES ===================
 
   /**
-   * Get messages with pagination
+   * Get messages with pagination (optimized API)
    */
   async getMessages(params: GetMessagesParams = {}): Promise<{
     messages: Message[];
     count: number;
     hasMore?: boolean;
+    oldestMessageId?: string;
   }> {
     try {
       const queryParams = new URLSearchParams();
@@ -220,6 +221,9 @@ class ChatService {
         messages: Message[];
         count: number;
         hasMore?: boolean;
+        has_more?: boolean;
+        oldestMessageId?: string;
+        oldest_message_id?: string;
         error?: { message: string; code: string; };
       }>(url);
       
@@ -229,13 +233,55 @@ class ChatService {
         return {
           messages: response.data.messages || [],
           count: response.data.count || 0,
-          hasMore: response.data.hasMore,
+          hasMore: response.data.hasMore || response.data.has_more,
+          oldestMessageId: response.data.oldestMessageId || response.data.oldest_message_id,
         };
       }
       
       throw new Error(response.data.error?.message || 'Failed to fetch messages');
     } catch (error: any) {
       console.error('Error fetching messages:', error);
+      throw new Error(error.message || 'Failed to fetch messages');
+    }
+  }
+
+  /**
+   * Get messages by channel slug (new optimized endpoint)
+   */
+  async getMessagesBySlug(channelSlug: string, params: {
+    limit?: number;
+    before?: string;
+    projectSlug?: string;
+  } = {}): Promise<{
+    messages: Message[];
+    hasMore: boolean;
+    oldestMessageId?: string;
+  }> {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.before) queryParams.append('before', params.before);
+      if (params.projectSlug) queryParams.append('projectSlug', params.projectSlug);
+
+      const url = `${this.baseUrl}/channels/${channelSlug}/messages?${queryParams.toString()}`;
+      console.log('🔄 Fetching messages from optimized endpoint:', url);
+      
+      const response = await axiosInstance.get<{
+        messages: Message[];
+        has_more: boolean;
+        oldest_message_id?: string;
+      }>(url);
+      
+      console.log('📥 Optimized messages API response:', response.data);
+      
+      return {
+        messages: response.data.messages || [],
+        hasMore: response.data.has_more || false,
+        oldestMessageId: response.data.oldest_message_id,
+      };
+    } catch (error: any) {
+      console.error('Error fetching messages by slug:', error);
       throw new Error(error.message || 'Failed to fetch messages');
     }
   }

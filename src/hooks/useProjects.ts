@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { projectsService } from '@/services/projects.service';
+import { projectService } from '@/services/project.service';
 import type { Project, CreateProjectData } from '@/types';
 
 interface UseProjectsReturn {
@@ -22,19 +23,27 @@ export function useProjects(): UseProjectsReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load projects from API
+  // Load projects from API (using lightweight version for performance)
   const loadProjects = useCallback(async () => {
-    console.log('🔄 Loading projects...');
+    console.log('🔄 Loading projects (lightweight)...');
     try {
       setIsLoading(true);
       setError(null);
       
-      const fetchedProjects = await projectsService.getProjects();
-      console.log('✅ Projects loaded:', fetchedProjects);
+      // Use the new lightweight API endpoint
+      const fetchedProjects = await projectService.getProjects(true);
+      console.log('✅ Projects loaded (lightweight):', fetchedProjects);
       setProjects(fetchedProjects);
     } catch (err: any) {
       console.error('❌ Error loading projects:', err);
-      setError(err.message || 'Failed to load projects');
+      // Fallback to old API if new one fails
+      try {
+        const fetchedProjects = await projectsService.getProjects();
+        console.log('✅ Projects loaded (fallback):', fetchedProjects);
+        setProjects(fetchedProjects);
+      } catch (fallbackErr: any) {
+        setError(fallbackErr.message || 'Failed to load projects');
+      }
     } finally {
       setIsLoading(false);
       console.log('🏁 Loading projects complete');

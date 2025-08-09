@@ -120,7 +120,7 @@ export function MessageInput({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Editing message from {messageBeingEdited.username || messageBeingEdited.user?.username || 'Unknown User'}</span>
+              <span className="text-sm font-medium">Editing message from {messageBeingEdited.username || messageBeingEdited.user?.username || messageBeingEdited.full_name || (messageBeingEdited.from_agent ? messageBeingEdited.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User')}</span>
             </div>
             <Button 
               variant="ghost" 

@@ -4,7 +4,7 @@ import type { Message } from "@/types/chat.types";
 
 // Note: This hook now works with real API messages, not mock data
 // The setMessages function is now a no-op since messages are managed by the useMessages hook
-export function useMessageActions(messages: Message[], setMessages: (fn: any) => void) {
+export function useMessageActions(messages: Message[], setMessages: (fn: (prev: Message[]) => Message[]) => void) {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function useMessageActions(messages: Message[], setMessages: (fn: any) =>
       }, 200);
     }
     
-    const authorName = message.username || message.user?.username || 'Unknown User';
+    const authorName = message.username || message.user?.username || message.full_name || (message.from_agent ? message.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
     toast({
       title: "Message pinned",
       description: `Message from ${authorName} has been pinned to the channel.`,
@@ -55,7 +55,7 @@ export function useMessageActions(messages: Message[], setMessages: (fn: any) =>
       }, 300);
     }
     
-    const authorName = message.username || message.user?.username || 'Unknown User';
+    const authorName = message.username || message.user?.username || message.full_name || (message.from_agent ? message.from_agent.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown User');
     toast({
       title: "Message unpinned",
       description: `Message from ${authorName} has been unpinned.`,
