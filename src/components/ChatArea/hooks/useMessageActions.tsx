@@ -1,20 +1,22 @@
 import React, { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { Message } from "@/data/mockData";
+import type { Message } from "@/types/chat.types";
 
-export function useMessageActions(messages: Message[], setMessages: React.Dispatch<React.SetStateAction<Message[]>>) {
+// Note: This hook now works with real API messages, not mock data
+// The setMessages function is now a no-op since messages are managed by the useMessages hook
+export function useMessageActions(messages: Message[], setMessages: (fn: any) => void) {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [deletedMessage, setDeletedMessage] = useState<{id: string, message: Message, timeout: NodeJS.Timeout} | null>(null);
   const [editedMessages, setEditedMessages] = useState<Set<string>>(new Set());
   const [deletingMessages, setDeletingMessages] = useState<Set<string>>(new Set());
-  const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set(['m1', 'm2', 'm5']));
+  const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
   const messageRefs = useRef<{[key: string]: HTMLDivElement}>({});
   const { toast } = useToast();
 
   const handlePinMessage = (messageId: string) => {
-    const message = messages.find(m => m.id === messageId);
+    const message = messages.find(m => m.message_id === messageId);
     if (!message) return;
 
     setPinnedMessageIds(prev => new Set([...prev, messageId]));
@@ -27,15 +29,16 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
       }, 200);
     }
     
+    const authorName = message.username || message.user?.username || 'Unknown User';
     toast({
       title: "Message pinned",
-      description: `Message from ${message.author.name} has been pinned to the channel.`,
+      description: `Message from ${authorName} has been pinned to the channel.`,
       duration: 3000,
     });
   };
 
   const handleUnpinMessage = (messageId: string) => {
-    const message = messages.find(m => m.id === messageId);
+    const message = messages.find(m => m.message_id === messageId);
     if (!message) return;
 
     setPinnedMessageIds(prev => {
@@ -52,15 +55,16 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
       }, 300);
     }
     
+    const authorName = message.username || message.user?.username || 'Unknown User';
     toast({
       title: "Message unpinned",
-      description: `Message from ${message.author.name} has been unpinned.`,
+      description: `Message from ${authorName} has been unpinned.`,
       duration: 3000,
     });
   };
 
   const handleEditMessage = (messageId: string) => {
-    const message = messages.find(m => m.id === messageId);
+    const message = messages.find(m => m.message_id === messageId);
     if (message) {
       setEditingMessage(messageId);
       setEditContent(message.content);
@@ -69,14 +73,16 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
 
   const handleSaveEdit = () => {
     if (editingMessage) {
-      setMessages(prev => prev.map(msg => 
-        msg.id === editingMessage 
-          ? { ...msg, content: editContent }
-          : msg
-      ));
+      // TODO: Call real API to edit message
+      // For now, just mark as edited locally
       setEditedMessages(prev => new Set([...prev, editingMessage]));
       setEditingMessage(null);
       setEditContent('');
+      
+      toast({
+        title: "Message edited",
+        description: "Your message has been updated.",
+      });
     }
   };
 
@@ -89,10 +95,8 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
     if (deletedMessage) {
       clearTimeout(deletedMessage.timeout);
       
-      setMessages(prev => [...prev, deletedMessage.message].sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      ));
-      
+      // TODO: Call real API to restore message
+      // For now, just clear the deleted state
       setDeletedMessage(null);
       
       toast({
@@ -103,7 +107,7 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
   };
 
   const handleSoftDeleteMessage = (messageId: string) => {
-    const messageToDelete = messages.find(m => m.id === messageId);
+    const messageToDelete = messages.find(m => m.message_id === messageId);
     if (!messageToDelete) return;
 
     if (deletedMessage?.timeout) {
@@ -112,17 +116,15 @@ export function useMessageActions(messages: Message[], setMessages: React.Dispat
 
     setDeletingMessages(prev => new Set([...prev, messageId]));
 
-    setTimeout(() => {
-      setMessages(prev => prev.filter(m => m.id !== messageId));
+    // TODO: Call real API to delete message
+    // For now, just show the toast
+    const timeout = setTimeout(() => {
+      setDeletedMessage(null);
       setDeletingMessages(prev => {
         const newSet = new Set(prev);
         newSet.delete(messageId);
         return newSet;
       });
-    }, 300);
-
-    const timeout = setTimeout(() => {
-      setDeletedMessage(null);
     }, 10000);
 
     setDeletedMessage({

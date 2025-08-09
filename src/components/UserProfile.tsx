@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, User, LogOut, Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Button } from "@/components/ui/headless-button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -10,15 +11,35 @@ import { ScrollArea } from "@/components/ui/headless-scroll-area";
 
 export function UserProfile() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
-  // Current user data - could come from context/props in real app
+  // Fallback if user not loaded yet
+  if (!user) {
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="h-9 w-16 bg-muted animate-pulse rounded-lg"></div>
+      </div>
+    );
+  }
+
+  // Generate initials from user name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   const currentUser = {
-    name: "Abu Shadab",
-    avatar: "AS",
+    name: user.fullName || user.username,
+    avatar: getInitials(user.fullName || user.username),
     status: "online",
-    email: "abu.shadab@company.com"
+    email: user.email
   };
 
   // Mock notifications
@@ -63,15 +84,23 @@ export function UserProfile() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleProfileAction = (action: string) => {
+  const handleProfileAction = async (action: string) => {
     setShowDropdown(false);
     
     if (action === 'profile') {
       router.push('/profile');
     } else if (action === 'logout') {
-      // Implement logout logic here
-      console.log('Logout user');
-      router.push('/login');
+      setIsLoggingOut(true);
+      try {
+        await logout();
+        // Redirect is handled by the logout function
+      } catch (error) {
+        console.error('Logout failed:', error);
+        // Fallback redirect if logout fails
+        router.push('/login');
+      } finally {
+        setIsLoggingOut(false);
+      }
     }
   };
 
@@ -241,9 +270,19 @@ export function UserProfile() {
               size="sm"
               className="w-full justify-start h-8 px-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => handleProfileAction('logout')}
+              disabled={isLoggingOut}
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              {isLoggingOut ? (
+                <>
+                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+                  Signing Out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </>
+              )}
             </Button>
           </div>
         </div>

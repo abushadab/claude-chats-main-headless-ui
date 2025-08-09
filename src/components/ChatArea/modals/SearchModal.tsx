@@ -17,13 +17,13 @@ import {
   Calendar,
   Check
 } from "lucide-react";
-import type { Message } from "@/data/mockData";
+import type { Message } from "@/types/chat.types";
 
 interface SearchModalProps {
   showSearchModal: boolean;
   onClose: () => void;
   messages: Message[];
-  onJumpToMessage: (messageId: string) => void;
+  onMessageSelect: (messageId: string) => void;
 }
 
 const dateOptions = [
@@ -37,7 +37,7 @@ export function SearchModal({
   showSearchModal, 
   onClose, 
   messages,
-  onJumpToMessage
+  onMessageSelect
 }: SearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
@@ -47,8 +47,15 @@ export function SearchModal({
   const uniqueAuthors = useMemo(() => {
     const authors = new Map();
     messages.forEach(msg => {
-      if (msg.author.type !== 'system') {
-        authors.set(msg.author.name, msg.author);
+      // Skip system messages and messages from agents
+      if (msg.type !== 'system' && !msg.from_agent) {
+        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        const authorInfo = {
+          name: authorName,
+          type: msg.from_agent ? 'ai-agent' : 'user',
+          user_id: msg.user_id
+        };
+        authors.set(authorName, authorInfo);
       }
     });
     return Array.from(authors.values());
@@ -56,20 +63,24 @@ export function SearchModal({
 
   // Filter messages based on search criteria
   const searchResults = useMemo(() => {
-    let results = messages.filter(msg => msg.author.type !== 'system');
+    let results = messages.filter(msg => msg.type !== 'system' && !msg.from_agent);
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      results = results.filter(msg => 
-        msg.content.toLowerCase().includes(query) ||
-        msg.author.name.toLowerCase().includes(query)
-      );
+      results = results.filter(msg => {
+        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        return msg.content.toLowerCase().includes(query) ||
+               authorName.toLowerCase().includes(query);
+      });
     }
 
     // Filter by selected author
     if (selectedAuthor) {
-      results = results.filter(msg => msg.author.name === selectedAuthor);
+      results = results.filter(msg => {
+        const authorName = msg.username || msg.user?.username || 'Unknown User';
+        return authorName === selectedAuthor;
+      });
     }
 
     // Filter by date
@@ -106,7 +117,7 @@ export function SearchModal({
 
   // Handle jump to message
   const handleJumpToMessage = (messageId: string) => {
-    onJumpToMessage(messageId);
+    onMessageSelect(messageId);
     onClose();
   };
 
@@ -298,53 +309,59 @@ export function SearchModal({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {searchResults.map((message) => (
-                    <button
-                      key={message.id}
-                      onClick={() => handleJumpToMessage(message.id)}
-                      className="w-full text-left p-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarFallback className={`text-xs font-semibold ${
-                            message.author.type === 'ai-agent' 
-                              ? 'bg-orange-500 text-white' 
-                              : 'bg-primary text-primary-foreground'
-                          }`}>
-                            {message.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">
-                                {highlightText(message.author.name, searchQuery)}
-                              </span>
-                              {message.author.type === 'ai-agent' && (
-                                <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                                  Agent
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {message.timestamp}
-                            </div>
-                          </div>
+                  {searchResults.map((message) => {
+                    const authorName = message.username || message.user?.username || 'Unknown User';
+                    const isAgent = !!message.from_agent;
+                    const timestamp = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    return (
+                      <button
+                        key={message.message_id}
+                        onClick={() => handleJumpToMessage(message.message_id)}
+                        className="w-full text-left p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className={`text-xs font-semibold ${
+                              isAgent
+                                ? 'bg-orange-500 text-white' 
+                                : 'bg-primary text-primary-foreground'
+                            }`}>
+                              {authorName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                           
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {selectedAuthor && !searchQuery ? 
-                              message.content : 
-                              <>{highlightText(message.content, searchQuery)}</>
-                            }
-                          </p>
-                        </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">
+                                  {highlightText(authorName, searchQuery)}
+                                </span>
+                                {isAgent && (
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                                    Agent
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {timestamp}
+                              </div>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {selectedAuthor && !searchQuery ? 
+                                message.content : 
+                                <>{highlightText(message.content, searchQuery)}</>
+                              }
+                            </p>
+                          </div>
 
-                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </button>
-                  ))}
+                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

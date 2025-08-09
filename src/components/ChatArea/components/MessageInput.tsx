@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/headless-button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { AtSign, Smile, Image, X } from "lucide-react";
-import type { Message } from "@/data/mockData";
+import type { Message } from "@/types/chat.types";
 
 interface MessageInputProps {
   // Message state
@@ -106,7 +106,7 @@ export function MessageInput({
   };
 
   const messageBeingEdited = editingMessage 
-    ? filteredMessages.find(m => m.id === editingMessage)
+    ? filteredMessages.find(m => m.message_id === editingMessage)
     : null;
   
   const truncatedContent = messageBeingEdited?.content.slice(0, 50) + 
@@ -120,7 +120,7 @@ export function MessageInput({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Editing message from {messageBeingEdited.author.name}</span>
+              <span className="text-sm font-medium">Editing message from {messageBeingEdited.username || messageBeingEdited.user?.username || 'Unknown User'}</span>
             </div>
             <Button 
               variant="ghost" 

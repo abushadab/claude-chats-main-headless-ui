@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/headless-button";
 import { Hash, Users, Info, Search } from "lucide-react";
-import type { Channel, Project } from "@/data/mockData";
+import type { Channel } from "@/types/chat.types";
+import type { Project } from "@/types/project.types";
 
 interface ChatHeaderProps {
   channel: Channel;
@@ -20,9 +21,9 @@ export function ChatHeader({ channel, project, showRightSidebar, onToggleSidebar
         <Hash className="h-5 w-5 text-muted-foreground mr-2" />
         <div>
           <h2 className="font-semibold text-foreground">{channel.name}</h2>
-          <p className="text-sm text-muted-foreground">{project.members} members</p>
+          <p className="text-sm text-muted-foreground">{project.member_count} members</p>
         </div>
-        {channel.isPrivate && (
+        {channel.is_private && (
           <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Private</span>
         )}
       </div>

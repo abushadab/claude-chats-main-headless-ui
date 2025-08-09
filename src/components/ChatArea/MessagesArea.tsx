@@ -4,7 +4,7 @@ import { Hash, Edit3, Trash2, MoreHorizontal, Pin } from "lucide-react";
 import { Button } from "@/components/ui/headless-button";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import type { Channel, Message } from "@/data/mockData";
+import type { Channel, Message } from "@/types";
 
 interface Agent {
   id: string;
@@ -88,23 +88,23 @@ export function MessagesArea({
           filteredMessages.map((message, index) => {
             const isConsecutive = 
               index > 0 && 
-              filteredMessages[index - 1].author.name === message.author.name &&
-              filteredMessages[index - 1].timestamp === message.timestamp &&
-              filteredMessages[index - 1].author.type !== 'system';
+              (filteredMessages[index - 1].username || filteredMessages[index - 1].user?.username) === (message.username || message.user?.username) &&
+              filteredMessages[index - 1].created_at === message.created_at &&
+              filteredMessages[index - 1].type !== 'system';
             
-            const isCurrentUser = message.author.type === 'current_user';
-            const isSystemMessage = message.author.type === 'system';
-            const isPinned = pinnedMessageIds.has(message.id);
+            const isCurrentUser = message.type === 'text'; // TODO: Implement current user detection
+            const isSystemMessage = message.type === 'system';
+            const isPinned = pinnedMessageIds.has(message.message_id);
             
             // System messages have different layout
             if (isSystemMessage) {
               return (
-                <div key={message.id} className="flex items-center justify-center my-4 px-4">
+                <div key={message.message_id} className="flex items-center justify-center my-4 px-4">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <div className="h-px bg-border flex-1 max-w-[100px]" />
-                    <span className="font-medium">{message.author.name}</span>
+                    <span className="font-medium">{message.username || message.user?.username || 'System'}</span>
                     <span>{message.content}</span>
-                    <span className="text-muted-foreground/70">• {message.timestamp}</span>
+                    <span className="text-muted-foreground/70">• {new Date(message.created_at).toLocaleTimeString()}</span>
                     <div className="h-px bg-border flex-1 max-w-[100px]" />
                   </div>
                 </div>
@@ -113,26 +113,24 @@ export function MessagesArea({
             
             return (
               <div 
-                key={message.id} 
+                key={message.message_id} 
                 ref={(el) => {
                   if (el) {
-                    messageRefs.current[message.id] = el;
+                    messageRefs.current[message.message_id] = el;
                   }
                 }}
-                className={`group relative ${isConsecutive ? 'mt-2' : 'mt-6'} px-2 py-2 transition-all duration-300 ${deletingMessages.has(message.id) ? 'opacity-0 scale-95 -translate-x-4' : ''}`}
+                className={`group relative ${isConsecutive ? 'mt-2' : 'mt-6'} px-2 py-2 transition-all duration-300 ${deletingMessages.has(message.message_id) ? 'opacity-0 scale-95 -translate-x-4' : ''}`}
               >
                 {/* Message Content */}
                 <div className={`relative w-[70%] ${isCurrentUser ? 'ml-auto' : 'mr-auto'} ${isPinned ? 'bg-primary/20 hover:bg-primary/25' : 'bg-muted/50 hover:bg-muted/70'} rounded-lg px-4 py-3 transition-colors flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} group`}>
                   {!isConsecutive && (
                     <Avatar className={`h-8 w-8 flex-shrink-0 ${isCurrentUser ? 'ml-3' : 'mr-3'}`}>
                       <AvatarFallback className={`text-xs font-semibold ${
-                        message.author.type === 'ai-agent' 
+                        message.from_agent 
                           ? 'bg-orange-500 text-white' 
-                          : message.author.type === 'current_user' || message.author.type === 'human'
-                          ? 'bg-primary text-primary-foreground'
                           : 'bg-primary text-primary-foreground'
                       }`}>
-                        {message.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {(message.username || message.user?.username || 'U').split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -141,25 +139,25 @@ export function MessagesArea({
                     {!isConsecutive && (
                       <div className={`flex items-center space-x-2 mb-1 ${isCurrentUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                         <span className={`font-semibold text-sm ${
-                          message.author.type === 'ai-agent' 
+                          message.from_agent 
                             ? 'text-orange-600' 
                             : 'text-foreground'
                         }`}>
-                          {message.author.name}
+                          {message.username || message.user?.username || 'Unknown User'}
                         </span>
-                        {message.author.type === 'ai-agent' && (
+                        {message.from_agent && (
                           <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
                             Agent
                           </span>
                         )}
-                        {message.author.type === 'current_user' && (
+                        {isCurrentUser && (
                           <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                             You
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {message.timestamp}
-                          {editedMessages.has(message.id) && (
+                          {new Date(message.created_at).toLocaleTimeString()}
+                          {editedMessages.has(message.message_id) && (
                             <span className="ml-1 text-xs text-muted-foreground/70 italic">
                               (edited)
                             </span>
@@ -183,13 +181,13 @@ export function MessagesArea({
                           </div>
                         ))}
                       </div>
-                      {message.image && (
+                      {message.files && message.files.length > 0 && message.files[0].mimetype?.startsWith('image/') && (
                         <div className={`mt-2 ${isCurrentUser ? 'flex justify-end' : 'flex justify-start'}`}>
                           <img 
-                            src={message.image} 
+                            src={message.files[0].url} 
                             alt="Uploaded image" 
                             className="max-w-40 max-h-28 rounded-lg border border-border object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => setLightboxImage(message.image || null)}
+                            onClick={() => setLightboxImage(message.files?.[0]?.url || null)}
                           />
                         </div>
                       )}
@@ -212,9 +210,9 @@ export function MessagesArea({
                       <PopoverContent className="w-48 p-1" align={isCurrentUser ? "start" : "end"}>
                         <div className="flex flex-col">
                           {/* Switch Agent option for AI messages */}
-                          {message.author.type === 'ai-agent' && isAdmin && (
+                          {message.from_agent && isAdmin && (
                             <>
-                              <Popover open={showAgentPicker === message.id} onOpenChange={(open) => setShowAgentPicker(open ? message.id : null)}>
+                              <Popover open={showAgentPicker === message.message_id} onOpenChange={(open) => setShowAgentPicker(open ? message.message_id : null)}>
                                 <PopoverTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -234,7 +232,7 @@ export function MessagesArea({
                                         variant="ghost"
                                         size="sm"
                                         className="w-full justify-start h-8 px-2 text-sm"
-                                        onClick={() => handleSwitchAgent(message.id, agent)}
+                                        onClick={() => handleSwitchAgent(message.message_id, agent)}
                                       >
                                         <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center mr-2">
                                           {agent.avatar}
@@ -254,7 +252,7 @@ export function MessagesArea({
                             variant="ghost"
                             size="sm"
                             className="w-full justify-start h-9 px-3 text-sm font-normal"
-                            onClick={() => isPinned ? handleUnpinMessage(message.id) : handlePinMessage(message.id)}
+                            onClick={() => isPinned ? handleUnpinMessage(message.message_id) : handlePinMessage(message.message_id)}
                           >
                             <Pin className={`h-4 w-4 mr-2 ${isPinned ? 'fill-current text-primary' : ''}`} />
                             {isPinned ? 'Unpin' : 'Pin'} Message
@@ -265,7 +263,7 @@ export function MessagesArea({
                             variant="ghost"
                             size="sm"
                             className="w-full justify-start h-9 px-3 text-sm font-normal"
-                            onClick={() => handleEditMessage(message.id)}
+                            onClick={() => handleEditMessage(message.message_id)}
                           >
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Message
@@ -278,7 +276,7 @@ export function MessagesArea({
                             variant="ghost"
                             size="sm"
                             className="w-full justify-start h-9 px-3 text-sm font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setShowDeleteModal(message.id)}
+                            onClick={() => setShowDeleteModal(message.message_id)}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Message

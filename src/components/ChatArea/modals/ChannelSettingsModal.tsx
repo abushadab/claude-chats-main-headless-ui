@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Settings } from "lucide-react";
-import type { Channel } from "@/data/mockData";
+import type { Channel } from "@/types/chat.types";
 
 // Custom Toggle Switch Component (preserved from original)
 const ToggleSwitch = ({ checked, onCheckedChange, disabled = false }: { 
@@ -102,7 +102,7 @@ export function ChannelSettingsModal({
                   <div className="text-xs text-muted-foreground">Only invited members can access this channel</div>
                 </div>
                 <ToggleSwitch 
-                  checked={channel?.isPrivate || false} 
+                  checked={channel?.is_private || false} 
                   onCheckedChange={() => {}} 
                   disabled={true}
                 />

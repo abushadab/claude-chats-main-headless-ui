@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import { mockProjects } from "@/data/mockData";
 import { useMessages } from "@/hooks/useMessages";
 import { useChannels } from "@/hooks/useChannels";
-import { useProjects } from "@/hooks/useProjects";
 import { useToast } from "@/hooks/use-toast";
-import { MessageType } from "@/types/chat.types";
-import type { Message } from "@/types/chat.types";
 import { MessagesArea } from "./MessagesArea";
 import { DeleteConfirmationModal } from "./modals/DeleteConfirmationModal";
 import { ImageLightbox } from "./modals/ImageLightbox";
@@ -31,8 +28,20 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps) {
-  // ALL HOOKS MUST BE CALLED AT THE TOP - NO CONDITIONAL RETURNS BEFORE THIS POINT
   const [newMessage, setNewMessage] = useState('');
+  
+  // Use real messages API
+  const { 
+    messages, 
+    isLoading: isLoadingMessages, 
+    error: messagesError, 
+    sendMessage: sendMessageAPI, 
+    editMessage: editMessageAPI, 
+    deleteMessage: deleteMessageAPI 
+  } = useMessages(selectedChannelId);
+  
+  // Use real channels API to get channel info
+  const { channels } = useChannels();
   const [showMentionModal, setShowMentionModal] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -52,23 +61,9 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     muteNotifications: false,
     desktopNotifications: true
   });
-  
   const { toast } = useToast();
-  
-  // Use real messages API
-  const { 
-    messages, 
-    isLoading: isLoadingMessages, 
-    error: messagesError, 
-    sendMessage: sendMessageAPI, 
-    editMessage: editMessageAPI, 
-    deleteMessage: deleteMessageAPI 
-  } = useMessages(selectedChannelId);
-  
-  // Use real channels API to get channel info
-  const { channels } = useChannels();
 
-  // Use the message actions hook
+  // Use the message actions hook (will need to be updated for real API)
   const {
     editingMessage,
     editContent,
@@ -89,7 +84,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     scrollToMessage,
   } = useMessageActions(messages, () => {}); // Empty setter since messages are managed by hook
 
-  // DERIVED STATE AND FUNCTIONS - AFTER ALL HOOKS
+  
   const filteredUsers = mockUsers.filter(user => 
     user.name.toLowerCase().includes(mentionSearch.toLowerCase())
   );
@@ -97,34 +92,16 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
   // Find the current channel from real channels data
   const channel = channels.find(c => c.channel_id === selectedChannelId);
   
-  // Get project info from real projects data
-  const { projects } = useProjects();
-  const project = projects.find(p => p.project_id === selectedProjectId) || {
-    project_id: selectedProjectId,
-    name: 'Unknown Project',
-    slug: 'unknown',
-    member_count: 0,
-    channel_count: 0,
-    user_role: 'member',
-    is_member: true,
-    // Add missing required fields for compatibility
-    owner_id: '',
-    is_active: true,
-    settings: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    created_by: '',
-    description: null,
-    project_type: 'standard',
-    visibility: 'private',
-    metadata: {},
-    joined_at: new Date().toISOString(),
-    owner_username: '',
-    owner_name: ''
+  // Mock project info - will be replaced when we implement projects API  
+  const project = {
+    id: selectedProjectId,
+    name: selectedProjectId === '1' ? 'LaunchDB' : `Project ${selectedProjectId}`,
+    channels: []
   };
   
   // Messages are already filtered by channel in the useMessages hook
   const filteredMessages = messages;
+
 
   // Get a consistent random quote for this channel
   const getRandomQuote = (channelId: string) => {
@@ -133,7 +110,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     return motivationalQuotes[index];
   };
 
-  // CONDITIONAL RETURNS - ONLY AFTER ALL HOOKS ARE CALLED
+
+  // Show loading or error state
   if (isLoadingMessages) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -179,7 +157,121 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     );
   }
 
-  // Additional functions and handlers
+  // Get pinned messages from current chat
+  const getPinnedMessages = () => {
+    return filteredMessages
+      .filter(msg => pinnedMessageIds.has(msg.message_id))
+      .map(msg => ({
+        id: msg.message_id,
+        content: msg.content,
+        author: {
+          name: msg.username || msg.user?.username || 'Unknown User',
+          type: msg.from_agent ? 'ai-agent' : 'user'
+        },
+        timestamp: new Date(msg.created_at).toLocaleTimeString(),
+        pinnedBy: 'User', // In real app, track who pinned it
+        channelId: msg.channel_id
+      }));
+  };
+
+  // File download handler
+  const handleFileDownload = (file: { name: string; type: string; size?: string }) => {
+    // In a real app, this would download the actual file from a server
+    // For demo purposes, we'll create a simulated file blob and download it
+    try {
+      // Create a simple text content based on file type
+      let content = '';
+      switch (file.type) {
+        case 'pdf':
+          content = `%PDF-1.4\nSimulated PDF file: ${file.name}`;
+          break;
+        case 'doc':
+          content = `Simulated Word document: ${file.name}\n\nThis is a demo file.`;
+          break;
+        case 'excel':
+          content = `Simulated Excel file: ${file.name}\nColumn1,Column2\nValue1,Value2`;
+          break;
+        case 'ppt':
+          content = `Simulated PowerPoint file: ${file.name}`;
+          break;
+        case 'code':
+          content = `-- Simulated SQL file: ${file.name}\nSELECT * FROM demo_table;`;
+          break;
+        default:
+          content = `Simulated file: ${file.name}`;
+      }
+
+      // Create blob and download link
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download started",
+        description: `Downloading ${file.name}${file.size ? ` (${file.size})` : ''}...`,
+      });
+    } catch {
+      toast({
+        title: "Download failed",
+        description: "There was an error downloading the file.",
+      });
+    }
+  };
+
+  // Helper function to check if a message can be edited/deleted
+  const canEditDelete = (message: { author: { type: string } }) => {
+    return message.author.type === 'current_user' || message.author.type === 'human' || 
+           (isAdmin && message.author.type === 'ai-agent');
+  };
+
+  // Keyboard shortcuts for message actions
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+F / Cmd+F for search
+      if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+        event.preventDefault();
+        setShowSearchModal(true);
+        return;
+      }
+
+      // Don't trigger shortcuts when typing in inputs
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Find the most recent current user message for shortcuts
+      const currentUserMessages = filteredMessages.filter(m => m.author.type === 'current_user');
+      const lastMessage = currentUserMessages[currentUserMessages.length - 1];
+
+      if (!lastMessage) return;
+
+      if (event.key === 'e' || event.key === 'E') {
+        event.preventDefault();
+        if (canEditDelete(lastMessage)) {
+          handleEditMessage(lastMessage.id);
+        }
+      } else if (event.key === 'Delete') {
+        event.preventDefault();
+        if (canEditDelete(lastMessage)) {
+          handleSoftDeleteMessage(lastMessage.id);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filteredMessages, canEditDelete, handleEditMessage, handleSoftDeleteMessage]);
+
+  if (!project || !channel) {
+    return <EmptyChannelState />;
+  }
+
   const handleSendMessage = async () => {
     if (newMessage.trim() || selectedImage) {
       try {
@@ -187,7 +279,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         await sendMessageAPI({
           content: newMessage.trim(),
           channelId: selectedChannelId,
-          type: MessageType.TEXT,
+          type: 'text',
           metadata: selectedImage ? { hasImage: true } : {},
         });
         
@@ -209,45 +301,25 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     }
   };
 
+
+
   const handleSwitchAgent = (messageId: string, newAgent: typeof availableAgents[0]) => {
-    // This would need to be implemented with real API calls
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId 
+        ? { 
+            ...msg, 
+            author: {
+              name: newAgent.name,
+              avatar: newAgent.avatar,
+              type: 'ai-agent',
+              subType: 'claude'
+            }
+          }
+        : msg
+    ));
     setShowAgentPicker(null);
   };
 
-  // File download handler
-  const handleFileDownload = (file: { name: string; type: string; size?: string }) => {
-    console.log('Downloading file:', file.name);
-  };
-
-  // Check if user can edit/delete message
-  const canEditDelete = (message: Message) => {
-    // For real API messages, check if user owns the message or is admin
-    return isAdmin || message.user_id === 'current'; // TODO: Replace with actual current user ID
-  };
-
-  // Get pinned messages from current chat
-  const getPinnedMessages = () => {
-    return filteredMessages
-      .filter(msg => pinnedMessageIds.has(msg.message_id))
-      .map(msg => {
-        const authorName = msg.username || msg.user?.username || 'Unknown User';
-        const authorAvatar = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-        
-        return {
-          id: msg.message_id,
-          content: msg.content,
-          author: {
-            name: authorName,
-            avatar: authorAvatar,
-            type: msg.from_agent ? 'ai-agent' as const : 'current_user' as const,
-            subType: msg.from_agent ? 'claude' as const : undefined
-          },
-          timestamp: new Date(msg.created_at).toLocaleTimeString(),
-          pinnedBy: 'User', // In real app, track who pinned it
-          channelId: msg.channel_id
-        };
-      });
-  };
 
   // Get current pinned messages for modal
   const currentPinnedMessages = getPinnedMessages();
@@ -278,60 +350,61 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
           onShowSearch={() => setShowSearchModal(true)}
         />
 
-        {/* Messages Area */}
-        <MessagesArea
-          filteredMessages={filteredMessages}
-          channel={channel}
-          selectedChannelId={selectedChannelId}
-          pinnedMessageIds={pinnedMessageIds}
-          editedMessages={editedMessages}
-          deletingMessages={deletingMessages}
-          showAgentPicker={showAgentPicker}
-          isAdmin={isAdmin}
-          messageRefs={messageRefs}
-          availableAgents={availableAgents}
-          getRandomQuote={getRandomQuote}
-          canEditDelete={canEditDelete}
-          handlePinMessage={handlePinMessage}
-          handleUnpinMessage={handleUnpinMessage}
-          handleEditMessage={handleEditMessage}
-          handleSwitchAgent={handleSwitchAgent}
-          setShowDeleteModal={setShowDeleteModal}
-          setLightboxImage={setLightboxImage}
-          setShowAgentPicker={setShowAgentPicker}
-        />
+      {/* Messages Area */}
+      <MessagesArea
+        filteredMessages={filteredMessages}
+        channel={channel}
+        selectedChannelId={selectedChannelId}
+        pinnedMessageIds={pinnedMessageIds}
+        editedMessages={editedMessages}
+        deletingMessages={deletingMessages}
+        showAgentPicker={showAgentPicker}
+        isAdmin={isAdmin}
+        messageRefs={messageRefs}
+        availableAgents={availableAgents}
+        getRandomQuote={getRandomQuote}
+        canEditDelete={canEditDelete}
+        handlePinMessage={handlePinMessage}
+        handleUnpinMessage={handleUnpinMessage}
+        handleEditMessage={handleEditMessage}
+        handleSwitchAgent={handleSwitchAgent}
+        setShowDeleteModal={setShowDeleteModal}
+        setLightboxImage={setLightboxImage}
+        setShowAgentPicker={setShowAgentPicker}
+      />
 
-        {/* Message Input */}
-        <MessageInput 
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          editingMessage={editingMessage}
-          editContent={editContent}
-          setEditContent={setEditContent}
-          handleSaveEdit={handleSaveEdit}
-          handleCancelEdit={handleCancelEdit}
-          selectedImage={selectedImage}
-          imagePreview={imagePreview}
-          setSelectedImage={setSelectedImage}
-          setImagePreview={setImagePreview}
-          handleSendMessage={handleSendMessage}
-          setShowMentionModal={setShowMentionModal}
-          filteredMessages={filteredMessages}
-          mockEmojis={mockEmojis}
-        />
+      {/* Message Input */}
+      <MessageInput 
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        editingMessage={editingMessage}
+        editContent={editContent}
+        setEditContent={setEditContent}
+        handleSaveEdit={handleSaveEdit}
+        handleCancelEdit={handleCancelEdit}
+        selectedImage={selectedImage}
+        imagePreview={imagePreview}
+        setSelectedImage={setSelectedImage}
+        setImagePreview={setImagePreview}
+        handleSendMessage={handleSendMessage}
+        setShowMentionModal={setShowMentionModal}
+        filteredMessages={filteredMessages}
+        mockEmojis={mockEmojis}
+      />
 
-        {/* Delete Confirmation Modal */}
-        <DeleteConfirmationModal 
-          showDeleteModal={showDeleteModal}
-          onClose={() => setShowDeleteModal(null)}
-          onConfirmDelete={handleDeleteMessage}
-        />
 
-        {/* Lightbox for Image View */}
-        <ImageLightbox 
-          lightboxImage={lightboxImage}
-          onClose={() => setLightboxImage(null)}
-        />
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal 
+        showDeleteModal={showDeleteModal}
+        onClose={() => setShowDeleteModal(null)}
+        onConfirmDelete={handleDeleteMessage}
+      />
+
+      {/* Lightbox for Image View */}
+      <ImageLightbox 
+        lightboxImage={lightboxImage}
+        onClose={() => setLightboxImage(null)}
+      />
       </div>
 
       {/* Right Sidebar */}
@@ -354,7 +427,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         onShowChannelSettingsClick={() => setShowChannelSettingsModal(true)}
       />
 
-      {/* Modals */}
+      {/* View All Images Modal */}
       <AllImagesModal 
         showAllImagesModal={showAllImagesModal}
         onClose={() => setShowAllImagesModal(false)}
@@ -362,6 +435,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         onImageClick={setLightboxImage}
       />
 
+      {/* View All Files Modal */}
       <AllFilesModal 
         showAllFilesModal={showAllFilesModal}
         onClose={() => setShowAllFilesModal(false)}
@@ -369,6 +443,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         onFileDownload={handleFileDownload}
       />
 
+      {/* Pinned Messages Modal */}
       <PinnedMessagesModal 
         showPinnedMessagesModal={showPinnedMessagesModal}
         onClose={() => setShowPinnedMessagesModal(false)}
@@ -382,6 +457,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         }}
       />
 
+      {/* Channel Settings Modal */}
       <ChannelSettingsModal 
         showChannelSettingsModal={showChannelSettingsModal}
         onClose={() => setShowChannelSettingsModal(false)}
@@ -389,37 +465,68 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
         notificationSettings={notificationSettings}
         onNotificationSettingsChange={setNotificationSettings}
         onSave={() => {
-          // TODO: Save settings to API
+          console.log("Saving settings - toast should appear");
+          toast({
+            title: "Settings saved",
+            description: "Channel settings have been updated successfully.",
+          });
         }}
       />
 
+      {/* Mention Modal */}
+      <MentionModal 
+        showMentionModal={showMentionModal}
+        onClose={() => {
+          setShowMentionModal(false);
+          setMentionSearch('');
+        }}
+        mentionSearch={mentionSearch}
+        onMentionSearchChange={setMentionSearch}
+        filteredUsers={filteredUsers}
+        onUserSelect={(user) => {
+          // If message ends with @, just add the username
+          // Otherwise add @username
+          setNewMessage(prev => {
+            if (prev.endsWith('@')) {
+              return prev + `${user.name} `;
+            }
+            return prev + `@${user.name} `;
+          });
+          setMentionSearch('');
+        }}
+      />
+
+      {/* Members Modal */}
       <MembersModal 
         showMembersModal={showMembersModal}
         onClose={() => setShowMembersModal(false)}
-        channelName={channel?.name || 'Unknown Channel'}
+        channelName={channel.name}
         currentUserId="current"
         isAdmin={isAdmin}
+        onSystemMessage={(message, userName, type) => {
+          // Add system message to chat
+          const systemMessage = {
+            id: `sys-${Date.now()}`,
+            content: message,
+            author: {
+              name: userName,
+              avatar: userName.split(' ').map(n => n[0]).join('').toUpperCase(),
+              type: 'system' as const,
+            },
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            channelId: selectedChannelId,
+            systemMessageType: type,
+          };
+          setMessages(prev => [...prev, systemMessage]);
+        }}
       />
 
+      {/* Search Modal */}
       <SearchModal 
         showSearchModal={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         messages={filteredMessages}
-        onMessageSelect={scrollToMessage}
-      />
-
-      <MentionModal 
-        showMentionModal={showMentionModal}
-        onClose={() => setShowMentionModal(false)}
-        filteredUsers={filteredUsers}
-        mentionSearch={mentionSearch}
-        onUserSelect={(user) => {
-          const mentionText = `@${user.name} `;
-          const newText = newMessage.replace(/@\w*$/, mentionText);
-          setNewMessage(newText);
-          setShowMentionModal(false);
-        }}
-        onMentionSearchChange={setMentionSearch}
+        onJumpToMessage={scrollToMessage}
       />
     </div>
   );

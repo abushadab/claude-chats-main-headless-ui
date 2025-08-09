@@ -31,12 +31,10 @@ interface CreateChannelModalProps {
   onClose: () => void;
   projectId: string;
   projectName: string;
-  onChannelCreated: (channel: {
-    id: string;
+  onChannelCreated: (channelData: {
     name: string;
-    type: 'text' | 'voice';
-    isPrivate: boolean;
     description?: string;
+    isPrivate?: boolean;
   }) => void;
 }
 
@@ -142,38 +140,24 @@ export function CreateChannelModal({
 
     setIsCreating(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
       const formattedName = formatChannelName(channelName);
-      const newChannel = {
-        id: `c${Date.now()}`,
+      
+      const channelData = {
         name: formattedName,
-        type: isVoiceChannel ? 'voice' as const : 'text' as const,
-        isPrivate,
-        description: channelDescription,
-        category: channelType
+        description: channelDescription || undefined,
+        isPrivate: isPrivate,
       };
 
+      // Call parent callback which handles the actual API call
+      await onChannelCreated(channelData);
+      
       // Show success animation
       setIsCreating(false);
       setShowSuccess(true);
 
-      // Show success toast
-      toast({
-        title: "Channel created successfully",
-        description: (
-          <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4" />
-            <span>#{formattedName} has been created in {projectName}</span>
-          </div>
-        ),
-      });
-
-      // Call parent callback after animation
+      // Reset form and close after animation
       setTimeout(() => {
-        onChannelCreated(newChannel);
-        
-        // Reset form
         setChannelName("");
         setChannelDescription("");
         setChannelType("general");
@@ -184,7 +168,10 @@ export function CreateChannelModal({
         
         onClose();
       }, 1500);
-    }, 1000);
+    } catch (error) {
+      setIsCreating(false);
+      // Error toast is handled by parent component
+    }
   };
 
   // Reset form when modal closes

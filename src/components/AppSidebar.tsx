@@ -17,7 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Textarea } from "@/components/ui/textarea";
-import { mockProjects } from "@/data/mockData";
+import { useProjects } from "@/hooks/useProjects";
+import { useChannels } from "@/hooks/useChannels";
 import { useToast } from "@/hooks/use-toast";
 
 interface AppSidebarProps {
@@ -30,6 +31,10 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   const collapsed = state === "collapsed";
   const { toast } = useToast();
   
+  // Use real projects API
+  const { projects, createProject } = useProjects();
+  const { channels } = useChannels();
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
@@ -39,10 +44,13 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
 
   const handleProjectSelect = (projectId: string) => {
     // Get the first channel of the selected project
-    const project = mockProjects.find(p => p.id === projectId);
-    if (project && project.channels.length > 0) {
-      const firstChannelId = project.channels[0].id;
+    const projectChannels = channels.filter(c => c.project_id === projectId);
+    if (projectChannels.length > 0) {
+      const firstChannelId = projectChannels[0].channel_id;
       router.push(`/project/${projectId}/channel/${firstChannelId}`);
+    } else {
+      // No channels in project, just navigate to project
+      router.push(`/project/${projectId}/channel/general`);
     }
   };
 
@@ -57,20 +65,18 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
     { name: 'Indigo', value: 'bg-indigo-500', color: '#6366f1' },
   ];
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (newProjectName.trim()) {
       setIsCreating(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
         const projectData = {
-          id: `p${Date.now()}`,
           name: newProjectName,
-          description: newProjectDescription,
-          color: selectedColor
+          description: newProjectDescription || undefined,
         };
         
-        console.log('Creating project:', projectData);
+        const newProject = await createProject(projectData);
+        console.log('Project created:', newProject);
         
         // Show success animation in modal
         setIsCreating(false);
@@ -86,6 +92,14 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
             </div>
           ),
         });
+
+        // Navigate to the new project if it has channels
+        const projectChannels = channels.filter(c => c.project_id === newProject.project_id);
+        if (projectChannels.length > 0) {
+          setTimeout(() => {
+            router.push(`/project/${newProject.project_id}/channel/${projectChannels[0].channel_id}`);
+          }, 1500);
+        }
         
         // Reset and close after animation
         setTimeout(() => {
@@ -94,11 +108,15 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
           setSelectedColor('bg-blue-500');
           setShowSuccess(false);
           setShowCreateModal(false);
-          
-          // In a real app, navigate to the new project
-          // router.push(`/project/${projectData.id}/channel/general`);
         }, 1500);
-      }, 1000);
+      } catch (error) {
+        setIsCreating(false);
+        toast({
+          title: "Error",
+          description: "Failed to create project. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -177,12 +195,12 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
         <SidebarGroup className="flex-1 overflow-y-auto">
           <SidebarGroupContent className={collapsed ? "!space-y-3" : ""}>
             <SidebarMenu className={collapsed ? "!space-y-3" : ""}>
-              {mockProjects.map((project) => {
-                const isSelected = selectedProjectId === project.id;
+              {projects.map((project) => {
+                const isSelected = selectedProjectId === project.project_id;
                 const initials = getProjectInitials(project.name);
                 
                 return (
-                  <SidebarMenuItem key={project.id}>
+                  <SidebarMenuItem key={project.project_id}>
                     <SidebarMenuButton 
                       className={collapsed 
                         ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center mx-auto rounded-lg transition-colors hover:bg-transparent`
@@ -190,27 +208,27 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                             isSelected ? 'bg-primary/20' : ''
                           }`
                       }
-                      onClick={() => handleProjectSelect(project.id)}
+                      onClick={() => handleProjectSelect(project.project_id)}
                     >
                       {collapsed ? (
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${getProjectColors(project.id).bg} ${
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${getProjectColors(project.project_id).bg} ${
                           isSelected 
                             ? `ring-2 ring-offset-2 ring-offset-background` 
                             : `opacity-60`
                         }`} style={isSelected ? {
-                          '--tw-ring-color': getProjectColors(project.id).bg === 'bg-blue-500' ? '#3b82f6' :
-                                             getProjectColors(project.id).bg === 'bg-purple-500' ? '#8b5cf6' :
-                                             getProjectColors(project.id).bg === 'bg-green-500' ? '#10b981' :
-                                             getProjectColors(project.id).bg === 'bg-orange-500' ? '#f97316' :
-                                             getProjectColors(project.id).bg === 'bg-pink-500' ? '#ec4899' : '#6b7280'
+                          '--tw-ring-color': getProjectColors(project.project_id).bg === 'bg-blue-500' ? '#3b82f6' :
+                                             getProjectColors(project.project_id).bg === 'bg-purple-500' ? '#8b5cf6' :
+                                             getProjectColors(project.project_id).bg === 'bg-green-500' ? '#10b981' :
+                                             getProjectColors(project.project_id).bg === 'bg-orange-500' ? '#f97316' :
+                                             getProjectColors(project.project_id).bg === 'bg-pink-500' ? '#ec4899' : '#6b7280'
                         } as React.CSSProperties : {}}>
-                          <span className={`text-sm font-bold ${getProjectColors(project.id).text}`}>
+                          <span className={`text-sm font-bold ${getProjectColors(project.project_id).text}`}>
                             {initials}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center">
-                          <div className={`w-7 h-7 ${getProjectColors(project.id).bg} ${getProjectColors(project.id).text} rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
+                          <div className={`w-7 h-7 ${getProjectColors(project.project_id).bg} ${getProjectColors(project.project_id).text} rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
                             {initials}
                           </div>
                           <span className="ml-3 truncate">{project.name}</span>

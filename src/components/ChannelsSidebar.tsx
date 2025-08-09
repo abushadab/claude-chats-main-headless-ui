@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react";
-import { Hash, Plus } from "lucide-react";
+import { Hash, Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { mockProjects, mockRecentUsers } from "@/data/mockData";
+import { mockRecentUsers } from "@/data/mockData";
+import { useChannels } from "@/hooks/useChannels";
+import { useProjects } from "@/hooks/useProjects";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -19,11 +21,29 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
-  const project = mockProjects.find(p => p.id === selectedProjectId);
   
-  if (!project) return null;
+  // Use real channels API filtered by project
+  const { 
+    channels: projectChannels, 
+    isLoading, 
+    error, 
+    createChannel, 
+    refreshChannels 
+  } = useChannels(selectedProjectId);
 
-  const textChannels = project.channels.filter(c => c.type === 'text');
+  // Get real projects data
+  const { projects } = useProjects();
+  
+  // All channels are text channels (no voice channels in current API)
+  const textChannels = projectChannels;
+
+  // Find current project from real data
+  const project = projects.find(p => p.project_id === selectedProjectId) || {
+    project_id: selectedProjectId,
+    name: 'Unknown Project',
+    member_count: 0,
+    slug: 'unknown'
+  };
 
   const handleChannelSelect = (channelId: string) => {
     router.push(`/project/${selectedProjectId}/channel/${channelId}`);
@@ -37,14 +57,58 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
     }
   };
 
+  // Handle channel creation
+  const handleChannelCreated = async (channelData: { 
+    name: string; 
+    description?: string; 
+    isPrivate?: boolean; 
+  }) => {
+    try {
+      const newChannel = await createChannel(channelData);
+      
+      // Navigate to the new channel
+      router.push(`/project/${selectedProjectId}/channel/${newChannel.channel_id}`);
+      
+      // Show success message
+      toast({
+        title: "Channel created",
+        description: `#${newChannel.name} has been created successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create channel. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-72 flex-shrink-0 bg-muted border-r border-border flex flex-col">
+        <div className="h-[60px] px-4 flex items-center border-b border-border">
+          <div className="text-red-500 text-sm">
+            Error loading channels: {error}
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Button onClick={refreshChannels} variant="outline" size="sm">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-72 flex-shrink-0 bg-muted border-r border-border flex flex-col">
       {/* Project Header */}
       <div className="h-[60px] px-4 flex items-center border-b border-border">
-        <div className={`w-4 h-4 rounded mr-3 flex-shrink-0 ${project.color}`} />
+        <div className="w-4 h-4 rounded mr-3 flex-shrink-0 bg-primary" />
         <div>
           <h2 className="font-bold text-foreground">{project.name}</h2>
-          <p className="text-sm text-muted-foreground">{project.members} members</p>
+          <p className="text-sm text-muted-foreground">{project.member_count} members</p>
         </div>
       </div>
 
@@ -81,26 +145,37 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
             </div>
             
             <div className="space-y-1">
-              {textChannels.map((channel) => (
-                <Button
-                  key={channel.id}
-                  variant="ghost"
-                  className={`w-full justify-start h-8 px-2 ${
-                    selectedChannelId === channel.id 
-                      ? 'bg-primary/20 hover:bg-primary/25 text-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
-                  }`}
-                  onClick={() => handleChannelSelect(channel.id)}
-                >
-                  <Hash className="h-3 w-3 mr-2" />
-                  <span className="text-sm">{channel.name}</span>
-                  {channel.unread > 0 && (
-                    <span className="ml-auto bg-blue-900 text-white text-xs rounded-sm px-1.5 py-0.5 min-w-[16px] h-4 flex items-center justify-center">
-                      {channel.unread}
-                    </span>
-                  )}
-                </Button>
-              ))}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading channels...</span>
+                </div>
+              ) : textChannels.length === 0 ? (
+                <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                  No channels found
+                </div>
+              ) : (
+                textChannels.map((channel) => (
+                  <Button
+                    key={channel.channel_id}
+                    variant="ghost"
+                    className={`w-full justify-start h-8 px-2 ${
+                      selectedChannelId === channel.channel_id 
+                        ? 'bg-primary/20 hover:bg-primary/25 text-foreground' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
+                    }`}
+                    onClick={() => handleChannelSelect(channel.channel_id)}
+                  >
+                    <Hash className="h-3 w-3 mr-2" />
+                    <span className="text-sm">{channel.name}</span>
+                    {channel.unread_count && channel.unread_count > 0 && (
+                      <span className="ml-auto bg-blue-900 text-white text-xs rounded-sm px-1.5 py-0.5 min-w-[16px] h-4 flex items-center justify-center">
+                        {channel.unread_count > 9 ? '9+' : channel.unread_count}
+                      </span>
+                    )}
+                  </Button>
+                ))
+              )}
             </div>
           </div>
 
@@ -142,19 +217,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId }: Channe
         onClose={() => setShowCreateChannelModal(false)}
         projectId={selectedProjectId}
         projectName={project.name}
-        onChannelCreated={(channel) => {
-          // Add the new channel to the project (in a real app, this would be an API call)
-          console.log('Channel created:', channel);
-          
-          // Navigate to the new channel
-          router.push(`/project/${selectedProjectId}/channel/${channel.id}`);
-          
-          // Show system message in the new channel
-          toast({
-            title: "Channel created",
-            description: `#${channel.name} has been created successfully`,
-          });
-        }}
+        onChannelCreated={handleChannelCreated}
       />
     </div>
   );
