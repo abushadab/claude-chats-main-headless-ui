@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useProjects } from "@/hooks/useProjects"
 import { useChannels } from "@/hooks/useChannels"
+import { useChannelsPreloader } from "@/hooks/useChannelsPreloader"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 
 export default function HomePage() {
@@ -14,6 +15,13 @@ export default function HomePage() {
   // Use 'skip' when we don't have a project yet to avoid fetching ALL channels
   const firstProjectId = projects.length > 0 ? projects[0].project_id : 'skip'
   const { channels, isLoading: isLoadingChannels, error: channelsError } = useChannels(firstProjectId as any)
+  
+  // Preload channels for all projects in the background
+  useChannelsPreloader({
+    enabled: true,
+    preloadDelay: 1000, // Start preloading 1 second after projects load
+    maxConcurrent: 2, // Limit concurrent requests
+  })
 
   useEffect(() => {
     // Only redirect once when data is ready

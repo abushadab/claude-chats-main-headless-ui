@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react";
-import { Bell, Moon, Monitor, Sun, Shield } from "lucide-react";
+import { Bell, Moon, Monitor, Sun, Shield, Database } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { CacheDebugger } from "@/components/CacheDebugger";
 
 export function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -17,6 +18,9 @@ export function SettingsPage() {
     
     // Privacy
     showOnlineStatus: true,
+    
+    // Development
+    showCacheDebugger: process.env.NODE_ENV === 'development',
   });
 
   const handleSettingChange = (key: string, value: boolean | string) => {
@@ -138,7 +142,38 @@ export function SettingsPage() {
           </div>
         </div>
 
+        {/* Development Tools (only in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="space-y-3">
+            <h3 className="flex items-center text-lg font-medium text-foreground">
+              <Database className="h-5 w-5 text-primary mr-2" />
+              Development Tools
+            </h3>
+            <div className="pl-7 border-l-2 border-border">
+              <SettingItem
+                label="Show Cache Debugger"
+                description="Display cache monitoring tools for development"
+                checked={settings.showCacheDebugger}
+                onChange={(checked) => handleSettingChange('showCacheDebugger', checked)}
+              />
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* Cache Debugger - conditionally rendered */}
+      {process.env.NODE_ENV === 'development' && settings.showCacheDebugger && (
+        <div className="bg-background border border-border rounded-lg p-6">
+          <h3 className="flex items-center text-lg font-medium text-foreground mb-4">
+            <Database className="h-5 w-5 text-primary mr-2" />
+            Cache Monitor
+          </h3>
+          <div className="relative">
+            <CacheDebugger inline={true} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

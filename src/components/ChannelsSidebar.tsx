@@ -176,8 +176,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
                   >
                     <Hash className="h-3 w-3 mr-2" />
                     <span className="text-sm">{channel.name}</span>
-                    {channel.unread_count && channel.unread_count > 0 && (
-                      <span className="ml-auto bg-blue-900 text-white text-xs rounded-sm px-1.5 py-0.5 min-w-[16px] h-4 flex items-center justify-center">
+                    {channel.unread_count > 0 && (
+                      <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center font-medium">
                         {channel.unread_count > 9 ? '9+' : channel.unread_count}
                       </span>
                     )}
