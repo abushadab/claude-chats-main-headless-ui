@@ -6,6 +6,7 @@ import { useProjects } from "@/hooks/useProjects"
 import { useChannels } from "@/hooks/useChannels"
 import { useChannelsPreloader } from "@/hooks/useChannelsPreloader"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
+import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
 
 export default function HomePage() {
   const router = useRouter()
@@ -59,12 +60,7 @@ export default function HomePage() {
   if (isLoadingProjects || isLoadingChannels) {
     return (
       <ProtectedRoute>
-        <div className="h-screen flex items-center justify-center bg-background">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading chat...</p>
-          </div>
-        </div>
+        <AuthLoadingSkeleton />
       </ProtectedRoute>
     )
   }
@@ -114,12 +110,7 @@ export default function HomePage() {
   // This should not be reached, but show loading as fallback
   return (
     <ProtectedRoute>
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Redirecting...</p>
-        </div>
-      </div>
+      <AuthLoadingSkeleton />
     </ProtectedRoute>
   )
 }

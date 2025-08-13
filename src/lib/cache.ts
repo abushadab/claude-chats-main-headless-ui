@@ -13,9 +13,22 @@ class CacheManager {
   private prefix = 'claude_chat_';
 
   /**
+   * Check if localStorage is available
+   */
+  private isLocalStorageAvailable(): boolean {
+    try {
+      return typeof window !== 'undefined' && window.localStorage !== undefined;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Set item in cache with optional TTL
    */
   set<T>(key: string, data: T, ttlMs?: number): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
     try {
       const cacheKey = `${this.prefix}${key}`;
       const cacheItem: CacheItem<T> = {
@@ -36,6 +49,8 @@ class CacheManager {
    * Get item from cache, returns null if expired or not found
    */
   get<T>(key: string): T | null {
+    if (!this.isLocalStorageAvailable()) return null;
+    
     try {
       const cacheKey = `${this.prefix}${key}`;
       const cached = localStorage.getItem(cacheKey);
@@ -69,6 +84,8 @@ class CacheManager {
    * Get cache age in milliseconds
    */
   getAge(key: string): number | null {
+    if (!this.isLocalStorageAvailable()) return null;
+    
     try {
       const cacheKey = `${this.prefix}${key}`;
       const cached = localStorage.getItem(cacheKey);
@@ -94,6 +111,8 @@ class CacheManager {
    * Remove item from cache
    */
   remove(key: string): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
     try {
       const cacheKey = `${this.prefix}${key}`;
       localStorage.removeItem(cacheKey);
@@ -106,6 +125,8 @@ class CacheManager {
    * Clear all cache items with our prefix
    */
   clear(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
     try {
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
@@ -122,6 +143,8 @@ class CacheManager {
    * Get cache statistics
    */
   getStats(): { count: number; totalSize: number } {
+    if (!this.isLocalStorageAvailable()) return { count: 0, totalSize: 0 };
+    
     let count = 0;
     let totalSize = 0;
 

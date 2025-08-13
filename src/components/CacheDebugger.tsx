@@ -35,6 +35,11 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
     const entries: CacheEntry[] = [];
     
     try {
+      // Check if localStorage is available
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return;
+      }
+      
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
         if (key.startsWith('claude_chat_')) {
@@ -68,7 +73,7 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
         state: query.state.status,
         dataUpdatedAt: query.state.dataUpdatedAt,
         isStale: query.isStale(),
-        isFetching: query.state.isFetching,
+        isFetching: query.state.fetchStatus === 'fetching',
       })),
     });
   };

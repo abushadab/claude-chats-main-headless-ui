@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Settings, PanelLeftClose, PanelLeft, Plus, CheckCircle, Sparkles } from "lucide-react";
+import { Settings, Plus, CheckCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Sidebar,
@@ -27,7 +27,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   const router = useRouter();
-  const { state, toggleSidebar } = useSidebar();
+  const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { toast } = useToast();
   
@@ -167,28 +167,24 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
     <Sidebar className={collapsed ? "w-16 collapsed-sidebar transition-all duration-300" : "w-64 transition-all duration-300"} collapsible="icon">
       <SidebarContent className={`bg-sidebar flex flex-col ${collapsed ? 'collapsed-content' : ''}`}>
         {/* Fixed Header Section */}
-        <div className={`h-14 flex items-center bg-sidebar flex-shrink-0 overflow-hidden ${collapsed ? 'px-2 justify-center collapsed-header' : 'px-3 justify-between'}`}>
+        <div className={`h-14 flex items-center bg-sidebar flex-shrink-0 overflow-hidden ${collapsed ? 'px-2 justify-center collapsed-header' : 'px-3 justify-center'}`}>
           {!collapsed ? (
-            <>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/hudhud_icon.svg" 
+                alt="Hudhud" 
+                className="h-8 w-8 flex-shrink-0"
+              />
               <h1 className="font-semibold text-sidebar-foreground whitespace-nowrap">
                 Wisdom Network
               </h1>
-              <button
-                onClick={() => toggleSidebar()}
-                className="p-1.5 hover:bg-accent rounded-md transition-colors"
-                aria-label="Collapse sidebar"
-              >
-                <PanelLeftClose className="h-5 w-5 text-muted-foreground" />
-              </button>
-            </>
+            </div>
           ) : (
-            <button
-              onClick={() => toggleSidebar()}
-              className="p-1.5 hover:bg-accent rounded-md transition-colors"
-              aria-label="Expand sidebar"
-            >
-              <PanelLeft className="h-5 w-5 text-muted-foreground" />
-            </button>
+            <img 
+              src="/hudhud_icon.svg" 
+              alt="Hudhud" 
+              className="h-8 w-8 flex-shrink-0"
+            />
           )}
         </div>
         

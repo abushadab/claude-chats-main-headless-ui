@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Hash, Plus, Loader2 } from "lucide-react";
+import { Hash, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { mockRecentUsers } from "@/data/mockData";
 import { useChannels } from "@/hooks/useChannels";
@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CreateChannelModal } from "@/components/ChatArea/modals/CreateChannelModal";
 import { useToast } from "@/hooks/use-toast";
+import { ChannelListSkeleton } from "@/components/ui/skeleton-components";
 
 interface ChannelsSidebarProps {
   selectedProjectId: string;
@@ -154,10 +155,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
             
             <div className="space-y-1">
               {isLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading channels...</span>
-                </div>
+                <ChannelListSkeleton count={4} />
               ) : textChannels.length === 0 ? (
                 <div className="px-2 py-4 text-sm text-muted-foreground text-center">
                   No channels found

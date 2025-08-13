@@ -12,6 +12,9 @@ import { projectService } from "@/services/project.service"
 import { notFound } from "next/navigation"
 import type { Project, ActiveMember } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
+import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
+import { PanelLeftClose, PanelLeft } from "lucide-react"
+import { useSidebar } from "@/components/ui/headless-sidebar"
 
 interface PageProps {
   params: Promise<{
@@ -20,9 +23,10 @@ interface PageProps {
   }>
 }
 
-export default function ChannelPage({ params }: PageProps) {
-  const { projectSlug, channelSlug } = use(params)
+function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string, channelSlug: string }) {
   const { projects } = useProjects() // For sidebar display
+  const { state, toggleSidebar } = useSidebar()
+  const collapsed = state === "collapsed"
   const [project, setProject] = useState<Project | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([])
@@ -72,57 +76,70 @@ export default function ChannelPage({ params }: PageProps) {
   if (loading || !project || !channelId) {
     return (
       <ProtectedRoute>
-        <div className="h-screen flex items-center justify-center bg-background">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading channel...</p>
-          </div>
-        </div>
+        <AuthLoadingSkeleton />
       </ProtectedRoute>
     )
   }
 
   return (
-    <ProtectedRoute>
-      <SidebarProvider>
-        <div className="h-screen flex w-full bg-background overflow-hidden">
-          {/* Main sidebar with projects */}
-          <AppSidebar 
+    <div className="h-screen flex w-full bg-background overflow-hidden">
+      {/* Main sidebar with projects */}
+      <AppSidebar 
+        selectedProjectId={project.project_id}
+      />
+      
+      {/* Global sidebar trigger */}
+      <div className="flex flex-col flex-1 h-full">
+        <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
+          <button
+            onClick={() => toggleSidebar()}
+            className="p-1.5 hover:bg-accent rounded-md transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeft className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+          <div className="flex items-center gap-4">
+            {/* Active members indicator */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                {activeMembers.filter(m => m.status === 'online').length} online
+              </span>
+            </div>
+            <UserProfile />
+          </div>
+        </header>
+        
+        <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
+          {/* Channels sidebar with pre-fetched channels */}
+          <ChannelsSidebar
             selectedProjectId={project.project_id}
+            selectedChannelId={channelId}
+            channels={channels}
           />
           
-          {/* Global sidebar trigger */}
-          <div className="flex flex-col flex-1 h-full">
-            <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
-              <h1 className="font-semibold text-foreground">{project.name}</h1>
-              <div className="flex items-center gap-4">
-                {/* Active members indicator */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                    {activeMembers.filter(m => m.status === 'online').length} online
-                  </span>
-                </div>
-                <UserProfile />
-              </div>
-            </header>
-            
-            <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
-              {/* Channels sidebar with pre-fetched channels */}
-              <ChannelsSidebar
-                selectedProjectId={project.project_id}
-                selectedChannelId={channelId}
-                channels={channels}
-              />
-              
-              {/* Chat area */}
-              <ChatArea
-                selectedProjectId={project.project_id}
-                selectedChannelId={channelId}
-              />
-            </div>
-          </div>
+          {/* Chat area */}
+          <ChatArea
+            selectedProjectId={project.project_id}
+            selectedChannelId={channelId}
+          />
         </div>
+      </div>
+    </div>
+  )
+}
+
+export default function ChannelPage({ params }: PageProps) {
+  const { projectSlug, channelSlug } = use(params)
+
+  return (
+    <ProtectedRoute>
+      <SidebarProvider>
+        <ChannelPageContent projectSlug={projectSlug} channelSlug={channelSlug} />
       </SidebarProvider>
     </ProtectedRoute>
   )
