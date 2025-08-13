@@ -153,11 +153,11 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
               </Popover>
             </div>
             
-            <div className="space-y-1">
+            <div className="space-y-1 px-2">
               {isLoading ? (
                 <ChannelListSkeleton count={4} />
               ) : textChannels.length === 0 ? (
-                <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                <div className="py-4 text-sm text-muted-foreground text-center">
                   No channels found
                 </div>
               ) : (
@@ -197,7 +197,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
               {mockRecentUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center px-2 py-1.5 hover:bg-primary/10 rounded cursor-pointer"
+                  className="flex items-center px-2 py-1.5 rounded"
                 >
                   <div className="relative mr-2">
                     <div className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center ${

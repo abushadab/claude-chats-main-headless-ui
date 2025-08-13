@@ -8,8 +8,8 @@ import { ChatArea } from "@/components/ChatArea"
 import { UserProfile } from "@/components/UserProfile"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
-import { projectService } from "@/services/project.service"
-import { notFound } from "next/navigation"
+import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
+import { notFound, useRouter } from "next/navigation"
 import type { Project, ActiveMember } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
 import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
@@ -27,59 +27,60 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { projects } = useProjects() // For sidebar display
   const { state, toggleSidebar } = useSidebar()
   const collapsed = state === "collapsed"
-  const [project, setProject] = useState<Project | null>(null)
-  const [channels, setChannels] = useState<Channel[]>([])
-  const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([])
-  const [channelId, setChannelId] = useState<string | null>(null)
+  const router = useRouter()
+  const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch project with channels and active members in one call
+  // Fetch complete workspace data in one API call
   useEffect(() => {
-    const fetchProjectData = async () => {
+    const fetchWorkspaceData = async () => {
       try {
         setLoading(true)
-        console.log('Fetching project data for:', projectSlug, channelSlug);
+        console.log('Fetching workspace data for:', projectSlug, channelSlug);
         
-        // Single API call to get project + channels + active members
-        const data = await projectService.getProjectBySlug(projectSlug, ['channels', 'active_members'])
-        console.log('Project data received:', data);
+        // Wait a bit to ensure auth is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        setProject(data.project)
-        setChannels(data.channels || [])
-        setActiveMembers(data.active_members || [])
+        // Single API call gets everything: project, channels, messages, members, etc.
+        const data = await workspaceService.getWorkspace(projectSlug, channelSlug);
+        console.log('Workspace data received:', data);
         
-        // Find the channel by slug
-        const channel = data.channels?.find(c => 
-          c.slug === channelSlug || 
-          c.name.toLowerCase() === channelSlug.toLowerCase()
-        )
-        
-        if (channel) {
-          console.log('Channel found:', channel.channel_id);
-          setChannelId(channel.channel_id)
-        } else {
-          console.error('Channel not found:', channelSlug, 'Available channels:', data.channels?.map(c => c.slug));
-          notFound()
+        // Handle smart fallback from backend
+        if (data.fallback_used) {
+          console.log('Channel fallback used:', data.fallback_reason);
+          // Update URL to reflect the actual channel being shown
+          router.replace(`/project/${projectSlug}/channel/${data.current_channel.slug}`, { scroll: false });
         }
+        
+        setWorkspaceData(data);
       } catch (error) {
-        console.error('Error fetching project data:', error)
+        console.error('Error fetching workspace data:', error)
         notFound()
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProjectData()
-  }, [projectSlug, channelSlug])
+    fetchWorkspaceData()
+  }, [projectSlug, channelSlug, router])
 
   // Show loading while fetching data
-  if (loading || !project || !channelId) {
+  if (loading || !workspaceData) {
     return (
       <ProtectedRoute>
         <AuthLoadingSkeleton />
       </ProtectedRoute>
     )
   }
+
+  // Backend now guarantees all fields are present
+  const { 
+    project, 
+    current_channel, 
+    channels = [], 
+    active_members = [], 
+    stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
+  } = workspaceData;
 
   return (
     <div className="h-screen flex w-full bg-background overflow-hidden">
@@ -93,7 +94,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
           <button
             onClick={() => toggleSidebar()}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors relative -ml-1.5"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -103,11 +104,11 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
             )}
           </button>
           <div className="flex items-center gap-4">
-            {/* Active members indicator */}
+            {/* Active members indicator with stats from workspace */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                {activeMembers.filter(m => m.status === 'online').length} online
+                {stats?.members_online || 0} online
               </span>
             </div>
             <UserProfile />
@@ -115,17 +116,17 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         </header>
         
         <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
-          {/* Channels sidebar with pre-fetched channels */}
+          {/* Channels sidebar with workspace data */}
           <ChannelsSidebar
             selectedProjectId={project.project_id}
-            selectedChannelId={channelId}
+            selectedChannelId={current_channel.channel_id}
             channels={channels}
           />
           
-          {/* Chat area */}
+          {/* Chat area with workspace data */}
           <ChatArea
             selectedProjectId={project.project_id}
-            selectedChannelId={channelId}
+            selectedChannelId={current_channel.channel_id}
           />
         </div>
       </div>

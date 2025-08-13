@@ -1,11 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectService } from '@/services/project.service';
 import { cache, CACHE_KEYS, CACHE_TTL, STALE_THRESHOLD } from '@/lib/cache';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Project, ActiveMember } from '@/types/project.types';
 import type { Channel } from '@/types/chat.types';
 
 export function useProjects(lightweight = true) {
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const cacheKey = `${CACHE_KEYS.PROJECTS}_${lightweight ? 'light' : 'full'}`;
 
   const {
@@ -17,6 +19,7 @@ export function useProjects(lightweight = true) {
     refetch,
   } = useQuery({
     queryKey: ['projects', lightweight],
+    enabled: isAuthenticated && !isAuthLoading, // Only fetch when authenticated
     queryFn: async (): Promise<Project[]> => {
       console.log('🔄 Fetching projects from API...');
       const data = await projectService.getProjects(lightweight);

@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, MessageSquare, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/headless-button';
 import { Input } from '@/components/ui/headless-input';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginCredentials } from '@/types';
+import dynamic from 'next/dynamic';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuth();
   
@@ -21,12 +23,15 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Partial<LoginCredentials>>({});
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - but only once to prevent loops
+  const [hasAttemptedRedirect, setHasAttemptedRedirect] = useState(false);
+  
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      router.push('/');
+    if (isAuthenticated && !authLoading && !hasAttemptedRedirect) {
+      setHasAttemptedRedirect(true);
+      router.push('/project/default/channel/general');
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, hasAttemptedRedirect, router]);
 
   // Clear auth error when form data changes
   useEffect(() => {
@@ -107,9 +112,13 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <MessageSquare className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Image 
+              src="/hudhud-logo.svg" 
+              alt="DevTeam Chat Logo" 
+              width={70} 
+              height={70}
+              className="rounded-[12px]"
+            />
           </div>
           <h2 className="text-3xl font-bold text-foreground">Welcome back</h2>
           <p className="mt-2 text-muted-foreground">
@@ -117,8 +126,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        {/* Login Form - Compatible with password managers */}
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleLogin}
+          suppressHydrationWarning={true}
+        >
           <div className="space-y-4">
             {/* Email */}
             <div className="space-y-2">
@@ -131,13 +144,14 @@ export default function LoginPage() {
                   id="email"
                   name="email"
                   type="text"
-                  autoComplete="email"
+                  autoComplete="username email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className={`pl-10 ${validationErrors.email ? 'border-red-500' : ''}`}
                   placeholder="Enter your email or username"
                   disabled={isSubmitting}
+                  suppressHydrationWarning={true}
                 />
               </div>
               {validationErrors.email && (
@@ -163,6 +177,7 @@ export default function LoginPage() {
                   className={`pl-10 pr-10 ${validationErrors.password ? 'border-red-500' : ''}`}
                   placeholder="Enter your password"
                   disabled={isSubmitting}
+                  suppressHydrationWarning={true}
                 />
                 <button
                   type="button"
@@ -276,3 +291,11 @@ export default function LoginPage() {
     </div>
   );
 }
+
+// Export with client-side only rendering to prevent hydration issues
+// This ensures compatibility with password managers like Dashlane, 1Password, etc.
+const LoginPage = dynamic(() => Promise.resolve(LoginPageContent), {
+  ssr: false,
+});
+
+export default LoginPage;

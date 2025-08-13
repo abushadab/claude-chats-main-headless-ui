@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { projectsService } from '@/services/projects.service';
 import { projectService } from '@/services/project.service';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Project, CreateProjectData } from '@/types';
 
 interface UseProjectsReturn {
@@ -22,38 +23,54 @@ export function useProjects(): UseProjectsReturn {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Load projects from API (using lightweight version for performance)
   const loadProjects = useCallback(async () => {
-    console.log('🔄 Loading projects (lightweight)...');
+    // Double-check authentication before making API call
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
       
       // Use the new lightweight API endpoint
       const fetchedProjects = await projectService.getProjects(true);
-      console.log('✅ Projects loaded (lightweight):', fetchedProjects);
       setProjects(fetchedProjects);
     } catch (err: any) {
-      console.error('❌ Error loading projects:', err);
       // Fallback to old API if new one fails
       try {
         const fetchedProjects = await projectsService.getProjects();
-        console.log('✅ Projects loaded (fallback):', fetchedProjects);
         setProjects(fetchedProjects);
       } catch (fallbackErr: any) {
         setError(fallbackErr.message || 'Failed to load projects');
       }
     } finally {
       setIsLoading(false);
-      console.log('🏁 Loading projects complete');
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  // Initial load
+  // Initial load - only if authenticated
   useEffect(() => {
+    // Skip if auth is still loading
+    if (isAuthLoading) {
+      setIsLoading(true);
+      return;
+    }
+    
+    // If not authenticated, don't fetch
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      setProjects([]);
+      setError(null);
+      return;
+    }
+    
     loadProjects();
-  }, [loadProjects]);
+  }, [isAuthenticated, isAuthLoading, loadProjects]);
 
   // Refresh projects (public method)
   const refreshProjects = useCallback(async () => {

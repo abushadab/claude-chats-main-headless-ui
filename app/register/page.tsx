@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, User, MessageSquare } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import Link from "next/link";
+import Image from 'next/image';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,9 +45,13 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <MessageSquare className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Image 
+              src="/hudhud-logo.svg" 
+              alt="DevTeam Chat Logo" 
+              width={70} 
+              height={70}
+              className="rounded-[12px]"
+            />
           </div>
           <h2 className="text-3xl font-bold text-foreground">Create account</h2>
           <p className="mt-2 text-muted-foreground">

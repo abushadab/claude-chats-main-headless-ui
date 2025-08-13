@@ -46,8 +46,8 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add request ID for tracking
-    config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Add request ID for tracking (commented out due to CORS)
+    // config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Log request in debug mode (only in development)
     if (process.env.NODE_ENV === 'development') {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Settings, Plus, CheckCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -164,32 +165,36 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16 collapsed-sidebar transition-all duration-300" : "w-64 transition-all duration-300"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-14 collapsed-sidebar transition-all duration-300" : "w-64 transition-all duration-300"} collapsible="icon">
       <SidebarContent className={`bg-sidebar flex flex-col ${collapsed ? 'collapsed-content' : ''}`}>
         {/* Fixed Header Section */}
-        <div className={`h-14 flex items-center bg-sidebar flex-shrink-0 overflow-hidden ${collapsed ? 'px-2 justify-center collapsed-header' : 'px-3 justify-center'}`}>
+        <div className={`h-14 flex items-center bg-sidebar flex-shrink-0 overflow-hidden ${collapsed ? 'px-2 justify-center collapsed-header' : 'px-3 justify-start'}`}>
           {!collapsed ? (
             <div className="flex items-center space-x-3">
-              <img 
-                src="/hudhud_icon.svg" 
+              <Image 
+                src="/hudhud-logo.svg" 
                 alt="Hudhud" 
-                className="h-8 w-8 flex-shrink-0"
+                width={40}
+                height={40}
+                className="rounded-[8px] flex-shrink-0"
               />
               <h1 className="font-semibold text-sidebar-foreground whitespace-nowrap">
-                Wisdom Network
+                Hudhud
               </h1>
             </div>
           ) : (
-            <img 
-              src="/hudhud_icon.svg" 
+            <Image 
+              src="/hudhud-logo.svg" 
               alt="Hudhud" 
-              className="h-8 w-8 flex-shrink-0"
+              width={40}
+              height={40}
+              className="rounded-[8px] flex-shrink-0"
             />
           )}
         </div>
         
         {/* Scrollable Content */}
-        <SidebarGroup className="flex-1 overflow-y-auto">
+        <SidebarGroup className="flex-1 overflow-y-auto py-2">
           <SidebarGroupContent className={collapsed ? "!space-y-3" : ""}>
             <SidebarMenu className={collapsed ? "!space-y-3" : ""}>
               {projects.map((project) => {
@@ -203,7 +208,7 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                     <SidebarMenuButton 
                       className={collapsed 
                         ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center mx-auto rounded-lg transition-colors hover:bg-transparent relative`
-                        : `w-full h-10 justify-start px-3 hover:bg-transparent relative ${
+                        : `w-full h-10 justify-start px-2 hover:bg-transparent relative ${
                             isSelected ? 'bg-primary/20' : ''
                           }`
                       }
@@ -228,10 +233,10 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
                         </>
                       ) : (
                         <div className="flex items-center w-full">
-                          <div className={`w-7 h-7 ${colors.bg} ${colors.text} rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
+                          <div className={`w-8 h-8 ${colors.bg} ${colors.text} rounded-lg text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
                             {initials}
                           </div>
-                          <span className="ml-3 truncate flex-1">{project.name}</span>
+                          <span className="ml-3 truncate flex-1 text-left">{project.name}</span>
                           {hasUnread && (
                             <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                               {project.unread_count}
@@ -246,23 +251,25 @@ export function AppSidebar({ selectedProjectId }: AppSidebarProps) {
             </SidebarMenu>
             
             {/* Create Project Button */}
-            <div className={`mt-2 ${collapsed ? 'px-0' : 'px-2'}`}>
+            <div className={`mt-2 ${collapsed ? 'px-0' : 'px-0'}`}>
               <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
                 <DialogTrigger asChild>
                   <Button
                     variant="ghost"
                     className={collapsed 
                       ? `w-10 h-10 p-0 flex items-center justify-center mx-auto rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent`
-                      : `w-full h-10 justify-start px-3 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent rounded-lg transition-colors`
+                      : `w-full h-10 justify-start px-2 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent rounded-lg transition-colors`
                     }
                   >
                     {collapsed ? (
                       <Plus className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Create Project</span>
-                      </>
+                      <div className="flex items-center w-full">
+                        <div className="w-8 h-8 border border-dashed border-muted-foreground/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Plus className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <span className="ml-3 text-sm text-muted-foreground">Create Project</span>
+                      </div>
                     )}
                   </Button>
                 </DialogTrigger>

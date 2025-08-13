@@ -215,9 +215,9 @@ export function UserProfile() {
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className="h-9 px-2 py-1 flex items-center space-x-2 hover:bg-accent rounded-lg transition-colors"
+            className="h-9 w-[140px] px-2 py-1 flex items-center space-x-2 hover:bg-accent rounded-lg transition-colors"
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                   {currentUser.avatar}
@@ -226,11 +226,11 @@ export function UserProfile() {
               {/* Online status indicator */}
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-background"></div>
             </div>
-            <div className="hidden md:block text-left">
-              <div className="text-sm font-medium text-foreground">{currentUser.name}</div>
-              <div className="text-xs text-muted-foreground capitalize">{currentUser.status}</div>
+            <div className="hidden md:block text-left flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground truncate">{currentUser.name}</div>
+              <div className="text-xs text-muted-foreground capitalize truncate">{currentUser.status}</div>
             </div>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
           </Button>
         </PopoverTrigger>
       

@@ -31,9 +31,15 @@ export function ChannelListSkeleton({ count = 5 }: { count?: number }) {
   return (
     <div className="space-y-1">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="flex items-center space-x-2 px-2 py-1.5 rounded">
-          <Skeleton className="h-3 w-3 rounded-sm flex-shrink-0" />
-          <Skeleton className="h-3 w-[70%]" />
+        <div key={index} className={`flex items-center h-8 space-x-2 px-2 rounded ${
+          index === 0 ? 'bg-primary/20' : ''
+        }`}>
+          <span className={`h-3 w-3 flex-shrink-0 text-xs leading-3 flex items-center justify-center ${
+            index === 0 ? 'text-foreground' : 'text-muted-foreground/50'
+          }`}>#</span>
+          <Skeleton className={`h-3 w-[70%] ${
+            index === 0 ? 'bg-primary/30' : ''
+          }`} />
           {index < 2 && <Skeleton className="h-4 w-4 rounded-full ml-auto" />}
         </div>
       ))}
@@ -104,8 +110,13 @@ export function AuthLoadingSkeleton() {
       {/* Main Layout */}
       <div className="flex flex-1 h-full">
         {/* Left Sidebar - Projects */}
-        <div className="w-16 bg-muted border-r border-border flex-shrink-0">
-          <div className="py-3">
+        <div className="w-14 bg-muted border-r border-border flex-shrink-0 flex flex-col">
+          {/* Logo Header - matches AppSidebar */}
+          <div className="h-14 flex items-center justify-center flex-shrink-0">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+          </div>
+          {/* Projects List */}
+          <div className="py-1">
             <ProjectListSkeleton count={5} />
           </div>
         </div>
@@ -114,10 +125,23 @@ export function AuthLoadingSkeleton() {
         <div className="flex flex-col flex-1 h-full">
           {/* 1. Main Top Bar */}
           <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
-            <Skeleton className="h-6 w-40" />
+            {/* Sidebar toggle button - matches actual h-5 w-5 */}
+            <Skeleton className="h-5 w-5 rounded-md" />
             <div className="flex items-center gap-4">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-8 w-8 rounded-full" />
+              {/* Online members indicator */}
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1">
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                  <Skeleton className="h-4 w-14" />
+                </div>
+              </div>
+              {/* UserProfile component area */}
+              <div className="flex items-center space-x-2">
+                {/* Notifications button */}
+                <Skeleton className="h-9 w-9 rounded-md" />
+                {/* User avatar dropdown - fixed width matching actual component */}
+                <Skeleton className="h-9 w-[140px] rounded-lg" />
+              </div>
             </div>
           </header>
           
@@ -126,8 +150,8 @@ export function AuthLoadingSkeleton() {
             {/* Channels Sidebar */}
             <div className="w-72 bg-muted border-r border-border flex-shrink-0">
               {/* 2. Channel Sidebar Header - PROJECT INFO */}
-              <div className="h-14 px-4 flex items-center border-b border-border bg-background">
-                <Skeleton className="h-8 w-8 rounded mr-3" />
+              <div className="h-[60px] px-4 flex items-center border-b border-border">
+                <Skeleton className="h-4 w-4 rounded mr-3" />
                 <div className="space-y-1">
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-3 w-20" />
@@ -137,16 +161,22 @@ export function AuthLoadingSkeleton() {
         {/* Channels List */}
         <div className="p-3">
           <div className="mb-4">
-            <Skeleton className="h-3 w-16 mb-2" />
-            <ChannelListSkeleton count={6} />
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+              Channels
+            </h3>
+            <div className="px-2">
+              <ChannelListSkeleton count={6} />
+            </div>
           </div>
           
           {/* Recent Users */}
           <div>
-            <Skeleton className="h-3 w-24 mb-2" />
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+              Recent Active Users
+            </h3>
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-2">
+                <div key={i} className="flex items-center space-x-2 px-2">
                   <Skeleton className="h-6 w-6 rounded-full" />
                   <Skeleton className="h-3 w-20" />
                 </div>

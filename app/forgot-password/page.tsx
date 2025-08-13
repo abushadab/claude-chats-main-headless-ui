@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, MessageSquare, ArrowLeft, CheckCircle } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import Link from "next/link";
+import Image from 'next/image';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -90,9 +91,12 @@ export default function ForgotPasswordPage() {
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <MessageSquare className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Image 
+              src="/hudhud-logo.svg" 
+              alt="DevTeam Chat Logo" 
+              width={48} 
+              height={48}
+            />
           </div>
           <h2 className="text-3xl font-bold text-foreground">Forgot password?</h2>
           <p className="mt-2 text-muted-foreground">

@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatService } from '@/services/chat.service';
 import { cache, CACHE_KEYS, CACHE_TTL, STALE_THRESHOLD } from '@/lib/cache';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Channel } from '@/types';
 
 interface UseChannelsReturn {
@@ -23,10 +24,14 @@ interface UseChannelsReturn {
 
 export function useChannels(projectId?: string): UseChannelsReturn {
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const cacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${projectId || 'all'}`;
 
   // Handle the 'skip' case for backward compatibility
-  const shouldFetch = projectId !== 'skip';
+  // Also skip if not authenticated
+  const shouldFetch = projectId !== 'skip' && isAuthenticated && !isAuthLoading;
+  
+  // Skip debug logging
 
   const {
     data: channels = [],
@@ -38,6 +43,11 @@ export function useChannels(projectId?: string): UseChannelsReturn {
   } = useQuery({
     queryKey: ['channels', projectId],
     queryFn: async (): Promise<Channel[]> => {
+      // Double-check auth before making request
+      if (!isAuthenticated) {
+        console.log('⏭️ Skipping channels fetch - not authenticated');
+        return [];
+      }
       console.log('🔄 Fetching channels from API...', projectId ? `for project: ${projectId}` : '(all)');
       const data = await chatService.getChannels(projectId);
       
@@ -47,7 +57,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
       
       return data;
     },
-    enabled: shouldFetch, // Skip if projectId is 'skip'
+    enabled: shouldFetch, // Skip if projectId is 'skip' or not authenticated
     // Enhanced caching strategy
     staleTime: STALE_THRESHOLD.CHANNELS,
     gcTime: CACHE_TTL.CHANNELS,
@@ -89,28 +99,14 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     },
   });
 
-  // If skip mode, return empty state
-  if (!shouldFetch) {
-    return {
-      channels: [],
-      isLoading: false,
-      error: null,
-      refreshChannels: async () => {},
-      createChannel: async () => { throw new Error('Cannot create channel in skip mode'); },
-      updateChannel: async () => { throw new Error('Cannot update channel in skip mode'); },
-      deleteChannel: async () => {},
-      joinChannel: async () => {},
-      leaveChannel: async () => {},
-    };
-  }
-
   // Enhanced error handling
   const errorMessage = error ? 
     (error as any)?.message || 'Failed to load channels' : 
     null;
 
-  // Refresh channels (public method)
+  // Refresh channels (public method) - Always define hooks regardless of shouldFetch
   const refreshChannels = useCallback(async () => {
+    if (!shouldFetch) return;
     console.log('🔄 Force refreshing channels...');
     cache.remove(cacheKey);
     await refetch();
@@ -122,6 +118,9 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     description?: string; 
     isPrivate?: boolean;
   }) => {
+    if (!shouldFetch) {
+      throw new Error('Cannot create channel in skip mode');
+    }
     try {
       const newChannel = await chatService.createChannel(data);
       
@@ -158,6 +157,9 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     channelId: string, 
     data: { name?: string; description?: string }
   ) => {
+    if (!shouldFetch) {
+      throw new Error('Cannot update channel in skip mode');
+    }
     try {
       const updatedChannel = await chatService.updateChannel(channelId, data);
       
@@ -189,6 +191,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
 
   // Delete channel with comprehensive cache cleanup
   const deleteChannel = useCallback(async (channelId: string) => {
+    if (!shouldFetch) return;
     try {
       await chatService.deleteChannel(channelId);
       
@@ -245,6 +248,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
 
   // Join channel with optimistic updates
   const joinChannel = useCallback(async (channelId: string) => {
+    if (!shouldFetch) return;
     try {
       await chatService.joinChannel(channelId);
       
@@ -277,6 +281,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
 
   // Leave channel with optimistic updates
   const leaveChannel = useCallback(async (channelId: string) => {
+    if (!shouldFetch) return;
     try {
       await chatService.leaveChannel(channelId);
       
@@ -307,10 +312,11 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     }
   }, [queryClient, projectId, cacheKey]);
 
+  // Return the same structure regardless of shouldFetch
   return {
-    channels,
-    isLoading,
-    error: errorMessage,
+    channels: shouldFetch ? channels : [],
+    isLoading: shouldFetch ? isLoading : false,
+    error: shouldFetch ? errorMessage : null,
     refreshChannels,
     createChannel,
     updateChannel,

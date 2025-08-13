@@ -359,9 +359,12 @@ class AuthService {
    */
   isAuthenticated(): boolean {
     const token = this.getAccessToken();
-    if (!token) return false;
+    if (!token) {
+      return false;
+    }
     
-    return !this.isTokenExpired();
+    const expired = this.isTokenExpired();
+    return !expired;
   }
 
   /**

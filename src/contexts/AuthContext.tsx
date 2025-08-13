@@ -70,10 +70,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const initializeAuth = async () => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
-
+      // Don't set loading here, it's already true from initial state
       // Check if user has valid token
-      if (authService.isAuthenticated()) {
+      const hasAuth = authService.isAuthenticated();
+      
+      if (hasAuth) {
         // Try to get user data
         const user = await authService.getCurrentUser();
         
@@ -123,10 +124,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error: null,
         });
 
-        // Redirect to dashboard or requested page
-        const redirectTo = sessionStorage.getItem('redirectTo') || '/';
+        // Redirect to workspace directly to avoid home page redirect loop
+        const redirectTo = sessionStorage.getItem('redirectTo') || '/project/default/channel/general';
         sessionStorage.removeItem('redirectTo');
-        router.push(redirectTo);
+        
+        // Small delay to ensure state is updated before redirect
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 100);
       } else {
         setState(prev => ({
           ...prev,
