@@ -18,21 +18,22 @@ export function DiscordTooltip({
   align = "center" 
 }: DiscordTooltipProps) {
   return (
-    <HoverCard openDelay={200} closeDelay={0}>
+    <HoverCard openDelay={100} closeDelay={0}>
       <HoverCardTrigger asChild>
         {children}
       </HoverCardTrigger>
       <HoverCardContent
         side={side}
         align={align}
-        sideOffset={8}
+        sideOffset={12}
         className={cn(
           "w-auto p-2 px-3",
           "bg-gray-900 text-white text-sm font-medium",
-          "border-0 shadow-lg",
+          "border-0 shadow-lg rounded-md",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "z-[100]"
         )}
       >
         {content}

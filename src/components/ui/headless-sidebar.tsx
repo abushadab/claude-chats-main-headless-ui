@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SidebarContextType {
@@ -78,22 +78,25 @@ export function SidebarMenuItem({ children, className }: { children: ReactNode; 
   return className ? <div className={className}>{children}</div> : <div>{children}</div>
 }
 
-interface SidebarMenuButtonProps {
+interface SidebarMenuButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
   className?: string
-  onClick?: () => void
 }
 
-export function SidebarMenuButton({ children, className, onClick }: SidebarMenuButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors",
-        className
-      )}
-    >
-      {children}
-    </button>
-  )
-}
+export const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
+  ({ children, className, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          "w-full flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+)
+SidebarMenuButton.displayName = 'SidebarMenuButton'

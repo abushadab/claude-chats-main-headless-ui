@@ -104,15 +104,34 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   // Backend now guarantees all fields are present
   const { 
     project, 
-    current_channel, 
     channels = [], 
     active_members = [], 
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
   } = workspaceData;
 
+  // Find the current channel from channels array
+  let current_channel = workspaceData.current_channel;
+  
+  // If current_channel is null, try to find it from channels array
+  if (!current_channel && channels.length > 0) {
+    // Try to find by slug
+    current_channel = channels.find(ch => ch.slug === channelSlug);
+    
+    // If not found by slug, try by name
+    if (!current_channel) {
+      current_channel = channels.find(ch => ch.name.toLowerCase().replace(/\s+/g, '-') === channelSlug);
+    }
+    
+    // If still not found, use first channel
+    if (!current_channel) {
+      current_channel = channels[0];
+      console.warn(`Channel ${channelSlug} not found, using first available channel`);
+    }
+  }
+
   // Safety check for current_channel
   if (!current_channel) {
-    console.error('No current channel found in workspace data');
+    console.error('No channels available in workspace data');
     return null;
   }
 
