@@ -95,7 +95,7 @@ export function Sidebar({ children, className, collapsible = 'none' }: SidebarPr
     <aside
       className={cn(
         "border-r border-border bg-sidebar transition-all duration-300 ease-in-out",
-        collapsed && collapsible === 'icon' ? "w-10" : "w-64",
+        collapsed && collapsible === 'icon' ? "w-14" : "w-64",
         className
       )}
     >
@@ -124,8 +124,8 @@ export function SidebarMenu({ children, className }: { children: ReactNode; clas
   return <nav className={cn("space-y-1", className)}>{children}</nav>
 }
 
-export function SidebarMenuItem({ children }: { children: ReactNode }) {
-  return <div>{children}</div>
+export function SidebarMenuItem({ children, className }: { children: ReactNode; className?: string }) {
+  return className ? <div className={className}>{children}</div> : <div>{children}</div>
 }
 
 interface SidebarMenuButtonProps {

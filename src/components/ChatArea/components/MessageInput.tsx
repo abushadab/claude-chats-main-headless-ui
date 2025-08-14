@@ -141,7 +141,7 @@ export function MessageInput({
       )}
       
       <div className="relative w-full">
-        <div className="flex flex-col bg-background rounded-2xl border border-border hover:border-border/80 focus-within:border-primary/50 transition-colors shadow-sm">
+        <div className="flex flex-col bg-background rounded-xl border border-border hover:border-border/80 focus-within:border-primary/50 transition-colors shadow-sm">
           {/* Image Preview */}
           {imagePreview && (
             <div className="px-4 pt-3">

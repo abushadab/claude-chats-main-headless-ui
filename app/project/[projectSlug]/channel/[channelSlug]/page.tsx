@@ -5,7 +5,6 @@ import { SidebarProvider } from "@/components/ui/headless-sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { ChannelsSidebar } from "@/components/ChannelsSidebar"
 import { ChatArea } from "@/components/ChatArea"
-import { UserProfile } from "@/components/UserProfile"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
@@ -28,8 +27,28 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { state, toggleSidebar } = useSidebar()
   const collapsed = state === "collapsed"
   const router = useRouter()
-  const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  
+  // Check localStorage for cached workspace data
+  const getCachedWorkspace = () => {
+    const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // Check if cache is less than 5 minutes old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          console.log('📦 Using cached workspace data');
+          return parsed.data;
+        }
+      } catch (e) {
+        console.error('Error parsing cached workspace data:', e);
+      }
+    }
+    return null;
+  };
+  
+  const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(getCachedWorkspace())
+  const [loading, setLoading] = useState(!getCachedWorkspace())
 
   // Fetch complete workspace data in one API call
   useEffect(() => {
@@ -44,6 +63,14 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         // Single API call gets everything: project, channels, messages, members, etc.
         const data = await workspaceService.getWorkspace(projectSlug, channelSlug);
         console.log('Workspace data received:', data);
+        
+        // Cache the workspace data
+        const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
+        console.log('💾 Workspace data cached');
         
         // Handle smart fallback from backend
         if (data.fallback_used) {
@@ -64,13 +91,18 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     fetchWorkspaceData()
   }, [projectSlug, channelSlug, router])
 
-  // Show loading while fetching data
-  if (loading || !workspaceData) {
+  // Show loading while fetching data - but use cached data if available
+  if (loading && !workspaceData) {
     return (
       <ProtectedRoute>
         <AuthLoadingSkeleton />
       </ProtectedRoute>
     )
+  }
+  
+  // If we don't have workspace data yet, return null
+  if (!workspaceData) {
+    return null;
   }
 
   // Backend now guarantees all fields are present
@@ -87,10 +119,13 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
       {/* Main sidebar with projects */}
       <AppSidebar 
         selectedProjectId={project.project_id}
+        isLoading={false}
       />
       
-      {/* Global sidebar trigger */}
-      <div className="flex flex-col flex-1 h-full">
+      {/* Main content area with calculated width based on sidebar state */}
+      <div className={`flex flex-col h-full ${
+        collapsed ? 'w-[calc(100vw-56px)]' : 'w-[calc(100vw-256px)]'
+      }`}>
         <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
           <button
             onClick={() => toggleSidebar()}
@@ -103,15 +138,12 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               <PanelLeftClose className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
-          <div className="flex items-center gap-4">
-            {/* Active members indicator with stats from workspace */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                {stats?.members_online || 0} online
-              </span>
-            </div>
-            <UserProfile />
+          {/* Active members indicator with stats from workspace */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+              {stats?.members_online || 0} online
+            </span>
           </div>
         </header>
         
@@ -127,6 +159,8 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
           <ChatArea
             selectedProjectId={project.project_id}
             selectedChannelId={current_channel.channel_id}
+            initialChannel={current_channel}
+            initialProject={project}
           />
         </div>
       </div>

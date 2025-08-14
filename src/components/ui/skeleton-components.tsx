@@ -1,4 +1,6 @@
 import { Skeleton } from "./skeleton";
+import { Hash } from "lucide-react";
+import Image from "next/image";
 
 // Project list skeleton for main sidebar
 export function ProjectListSkeleton({ count = 5 }: { count?: number }) {
@@ -31,12 +33,12 @@ export function ChannelListSkeleton({ count = 5 }: { count?: number }) {
   return (
     <div className="space-y-1">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className={`flex items-center h-8 space-x-2 px-2 rounded ${
+        <div key={index} className={`flex items-center h-8 space-x-2 px-2 rounded-md ${
           index === 0 ? 'bg-primary/20' : ''
         }`}>
-          <span className={`h-3 w-3 flex-shrink-0 text-xs leading-3 flex items-center justify-center ${
-            index === 0 ? 'text-foreground' : 'text-muted-foreground/50'
-          }`}>#</span>
+          <Hash className={`h-3 w-3 flex-shrink-0 ${
+            index === 0 ? 'text-foreground/70' : 'text-muted-foreground/50'
+          }`} />
           <Skeleton className={`h-3 w-[70%] ${
             index === 0 ? 'bg-primary/30' : ''
           }`} />
@@ -70,9 +72,9 @@ export function MessageListSkeleton({ count = 6 }: { count?: number }) {
 // Chat header skeleton
 export function ChatHeaderSkeleton() {
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-b">
-      <div className="flex items-center space-x-3">
-        <Skeleton className="h-8 w-8 rounded-full" />
+    <div className="h-[60px] flex items-center justify-between px-4 border-b">
+      <div className="flex items-center">
+        <Hash className="h-5 w-5 text-muted-foreground/50 mr-2" />
         <div className="space-y-1">
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-3 w-20" />
@@ -108,39 +110,71 @@ export function AuthLoadingSkeleton() {
   return (
     <div className="h-screen flex w-full bg-background overflow-hidden">
       {/* Main Layout */}
-      <div className="flex flex-1 h-full">
+      <div className="flex w-full h-full">
         {/* Left Sidebar - Projects */}
         <div className="w-14 bg-muted border-r border-border flex-shrink-0 flex flex-col">
-          {/* Logo Header - matches AppSidebar */}
+          {/* Logo Header - Always show actual logo, not skeleton */}
           <div className="h-14 flex items-center justify-center flex-shrink-0">
-            <Skeleton className="h-10 w-10 rounded-lg" />
+            <Image 
+              src="/hudhud-logo.svg" 
+              alt="Hudhud" 
+              width={40}
+              height={40}
+              className="rounded-[8px] flex-shrink-0"
+            />
           </div>
-          {/* Projects List */}
-          <div className="py-1">
-            <ProjectListSkeleton count={5} />
+          {/* Projects List - Matches exact structure of AppSidebar */}
+          <div className="flex-1 overflow-y-auto py-2">
+            <div className="space-y-1 !space-y-3">
+              <nav className="space-y-1 !space-y-3">
+                {/* Show 5 project skeletons matching the actual sidebar */}
+                {Array.from({ length: 5 }).map((_, index) => {
+                  const isFirst = index === 0;
+                  return (
+                    <div key={index} className="flex items-center justify-center">
+                      <button className="collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative" disabled>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isFirst ? 'ring-2 ring-offset-2 ring-offset-background ring-primary' : ''
+                        }`}>
+                          <Skeleton className="w-full h-full rounded-lg" />
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </nav>
+              
+              {/* Create Project Button skeleton - outside nav but inside scrollable area */}
+              <div className="mt-2 flex items-center justify-center">
+                <button className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30" disabled>
+                  <Skeleton className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* User Profile skeleton */}
+          <div className="h-12 bg-sidebar flex items-center justify-center flex-shrink-0 px-2 border-t border-border">
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
+          
+          {/* Bottom settings skeleton */}
+          <div className="h-12 bg-sidebar flex items-center justify-center flex-shrink-0 px-2">
+            <Skeleton className="h-9 w-9 rounded-lg" />
           </div>
         </div>
         
-        {/* Right Side - Channels + Chat */}
-        <div className="flex flex-col flex-1 h-full">
+        {/* Right Side - Channels + Chat with fixed width */}
+        <div className="flex flex-col w-[calc(100vw-56px)] h-full">
           {/* 1. Main Top Bar */}
           <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
             {/* Sidebar toggle button - matches actual h-5 w-5 */}
             <Skeleton className="h-5 w-5 rounded-md" />
-            <div className="flex items-center gap-4">
-              {/* Online members indicator */}
-              <div className="flex items-center gap-2 text-sm">
-                <div className="flex items-center gap-1">
-                  <Skeleton className="h-2 w-2 rounded-full" />
-                  <Skeleton className="h-4 w-14" />
-                </div>
-              </div>
-              {/* UserProfile component area */}
-              <div className="flex items-center space-x-2">
-                {/* Notifications button */}
-                <Skeleton className="h-9 w-9 rounded-md" />
-                {/* User avatar dropdown - fixed width matching actual component */}
-                <Skeleton className="h-9 w-[140px] rounded-lg" />
+            {/* Online members indicator only */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-1">
+                <Skeleton className="h-2 w-2 rounded-full" />
+                <Skeleton className="h-4 w-14" />
               </div>
             </div>
           </header>
@@ -161,23 +195,39 @@ export function AuthLoadingSkeleton() {
         {/* Channels List */}
         <div className="p-3">
           <div className="mb-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-              Channels
-            </h3>
-            <div className="px-2">
-              <ChannelListSkeleton count={6} />
+            <div className="flex items-center justify-between mb-2 px-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Channels
+              </h3>
+              <Skeleton className="h-4 w-4 rounded" />
+            </div>
+            <div className="space-y-1 px-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className={`flex items-center h-8 space-x-2 px-2 rounded-md ${
+                  index === 0 ? 'bg-primary/20' : ''
+                }`}>
+                  <Hash className={`h-3 w-3 flex-shrink-0 ${
+                    index === 0 ? 'text-foreground/70' : 'text-muted-foreground/50'
+                  }`} />
+                  <Skeleton className={`h-3 w-[70%] ${
+                    index === 0 ? 'bg-primary/30' : ''
+                  }`} />
+                </div>
+              ))}
             </div>
           </div>
           
           {/* Recent Users */}
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-              Recent Active Users
-            </h3>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-2 px-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Recent Active Users
+              </h3>
+            </div>
+            <div className="space-y-1">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-2 px-2">
-                  <Skeleton className="h-6 w-6 rounded-full" />
+                <div key={i} className="flex items-center space-x-2 px-2 py-1.5 rounded">
+                  <Skeleton className="h-6 w-6 rounded" />
                   <Skeleton className="h-3 w-20" />
                 </div>
               ))}
@@ -189,29 +239,45 @@ export function AuthLoadingSkeleton() {
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col">
               {/* 3. Chat Header - CHANNEL INFO */}
-              <div className="h-14 px-6 flex items-center justify-between border-b border-border">
-                <div className="flex items-center space-x-3">
-                  <Skeleton className="h-5 w-5 rounded" />
+              <div className="h-[60px] px-4 flex items-center justify-between border-b border-border">
+                <div className="flex items-center">
+                  <Hash className="h-5 w-5 text-muted-foreground/50 mr-2" />
                   <div className="space-y-1">
                     <Skeleton className="h-4 w-32" />
                     <Skeleton className="h-3 w-24" />
                   </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Skeleton className="h-8 w-8 rounded" />
-                  <Skeleton className="h-8 w-8 rounded" />
-                  <Skeleton className="h-8 w-8 rounded" />
+                <div className="flex items-center space-x-2">
+                  <div className="h-8 w-10 flex items-center justify-center">
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </div>
+                  <div className="h-8 w-10 flex items-center justify-center">
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </div>
+                  <div className="h-8 w-10 flex items-center justify-center">
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </div>
                 </div>
               </div>
               
               {/* Messages Area */}
-              <div className="flex-1 overflow-hidden">
-                <MessageListSkeleton count={6} />
+              <div className="flex-1 overflow-hidden p-4">
+                <div className="space-y-4">
+                  {/* Simple alternating message skeletons without avatars/names */}
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className={`flex ${index % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                      <Skeleton className={`${index % 2 === 0 ? 'w-[60%]' : 'w-[50%]'} rounded-lg`} style={{ height: '90px' }} />
+                    </div>
+                  ))}
+                </div>
               </div>
               
               {/* Message Input */}
-              <div className="p-4 border-t border-border">
-                <Skeleton className="h-12 w-full rounded-lg" />
+              <div className="border-t border-border bg-background" style={{ height: '151px' }}>
+                <div className="flex flex-col justify-end h-full p-4">
+                  <div className="bg-white border border-border rounded-xl" style={{ height: '118px' }}>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

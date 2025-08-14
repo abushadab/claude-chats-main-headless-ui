@@ -18,6 +18,7 @@ interface MessagesAreaProps {
   filteredMessages: Message[];
   channel: Channel;
   selectedChannelId: string;
+  isLoadingMessages?: boolean;
   pinnedMessageIds: Set<string>;
   editedMessages: Set<string>;
   deletingMessages: Set<string>;
@@ -40,6 +41,7 @@ export function MessagesArea({
   filteredMessages,
   channel,
   selectedChannelId,
+  isLoadingMessages = false,
   pinnedMessageIds,
   editedMessages,
   deletingMessages,
@@ -60,8 +62,8 @@ export function MessagesArea({
   return (
     <div className="flex-1 overflow-y-auto px-2 py-4">
       <div className="space-y-1">
-        {filteredMessages.length === 0 ? (
-          // Empty State with Motivational Quote
+        {filteredMessages.length === 0 && !isLoadingMessages ? (
+          // Empty State with Motivational Quote - only show when not loading
           <div className="flex-1 flex items-center justify-center h-full min-h-[400px]">
             <div className="text-center max-w-2xl mx-auto px-6">
               <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">

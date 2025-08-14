@@ -24,14 +24,18 @@ import { ChatHeader } from "./components/ChatHeader";
 import { EmptyChannelState } from "./components/EmptyChannelState";
 import { useMessageActions } from "./hooks/useMessageActions";
 import { mockUsers, availableAgents, mockEmojis, motivationalQuotes, sharedImages, sharedFiles } from "./mockData";
-import { ChatHeaderSkeleton, MessageListSkeleton } from "@/components/ui/skeleton-components";
+import { MessageListSkeleton } from "@/components/ui/skeleton-components";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Hash } from "lucide-react";
 
 interface ChatAreaProps {
   selectedProjectId: string;
   selectedChannelId: string;
+  initialChannel?: Channel;
+  initialProject?: Project;
 }
 
-export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps) {
+export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel, initialProject }: ChatAreaProps) {
   // ALL HOOKS MUST BE CALLED AT THE TOP - NO CONDITIONAL RETURNS BEFORE THIS POINT
   const [newMessage, setNewMessage] = useState('');
   const [showMentionModal, setShowMentionModal] = useState(false);
@@ -95,12 +99,12 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
     user.name.toLowerCase().includes(mentionSearch.toLowerCase())
   );
   
-  // Find the current channel from real channels data
-  const channel = channels.find(c => c.channel_id === selectedChannelId);
+  // Find the current channel from initial data or real channels data
+  const channel = initialChannel || channels.find(c => c.channel_id === selectedChannelId);
   
-  // Get project info from real projects data
+  // Get project info from initial data or real projects data
   const { projects } = useProjects();
-  const project = projects.find(p => p.project_id === selectedProjectId) || {
+  const project = initialProject || projects.find(p => p.project_id === selectedProjectId) || {
     project_id: selectedProjectId,
     name: 'Unknown Project',
     slug: 'unknown',
@@ -135,12 +139,37 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
   };
 
   // CONDITIONAL RETURNS - ONLY AFTER ALL HOOKS ARE CALLED
-  if (isLoadingMessages) {
+  // Only show skeleton if we're loading and don't have initial data
+  if (isLoadingMessages && !initialChannel) {
     return (
-      <div className="flex-1 flex bg-background overflow-hidden">
-        <div className="flex-1 flex flex-col">
-          <ChatHeaderSkeleton />
-          <MessageListSkeleton count={8} />
+      <div className="flex-1 flex flex-col">
+        {/* Chat Header */}
+        <div className="h-[60px] flex items-center justify-between px-4 border-b">
+          <div className="flex items-center">
+            <Hash className="h-5 w-5 text-muted-foreground/50 mr-2" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Skeleton className="h-8 w-8 rounded" />
+            <Skeleton className="h-8 w-8 rounded" />
+            <Skeleton className="h-8 w-8 rounded" />
+          </div>
+        </div>
+        
+        {/* Messages Area */}
+        <div className="flex-1 overflow-hidden">
+          <MessageListSkeleton count={6} />
+        </div>
+        
+        {/* Message Input */}
+        <div className="border-t border-border bg-background" style={{ height: '151px' }}>
+          <div className="flex flex-col justify-end h-full p-4">
+            <div className="bg-white border border-border rounded-xl" style={{ height: '118px' }}>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -284,6 +313,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId }: ChatAreaProps
           filteredMessages={filteredMessages}
           channel={channel}
           selectedChannelId={selectedChannelId}
+          isLoadingMessages={isLoadingMessages}
           pinnedMessageIds={pinnedMessageIds}
           editedMessages={editedMessages}
           deletingMessages={deletingMessages}

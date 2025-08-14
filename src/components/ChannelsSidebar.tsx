@@ -154,7 +154,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
             </div>
             
             <div className="space-y-1 px-2">
-              {isLoading ? (
+              {isLoading && channels.length === 0 ? (
                 <ChannelListSkeleton count={4} />
               ) : textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
