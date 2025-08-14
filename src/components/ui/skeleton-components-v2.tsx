@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { SidebarProvider, useSidebar } from "@/components/ui/headless-sidebar";
+import { SidebarProvider } from "@/components/ui/headless-sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ChannelsSidebar } from "@/components/ChannelsSidebar";
 import { Skeleton } from "./skeleton";
@@ -10,8 +10,6 @@ import type { Channel } from "@/types/chat.types";
 
 // Inner component that can use useSidebar hook
 function SkeletonContent() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const [firstProjectId, setFirstProjectId] = useState("");
   const [channels, setChannels] = useState<Channel[]>([]);
   
@@ -46,10 +44,8 @@ function SkeletonContent() {
         selectedProjectId={firstProjectId}
       />
       
-      {/* Rest of the layout with skeletons - fixed width based on sidebar state */}
-      <div className={`flex flex-col h-full ${
-        collapsed ? 'w-[calc(100vw-56px)]' : 'w-[calc(100vw-256px)]'
-      }`}>
+      {/* Rest of the layout with skeletons - fixed width */}
+      <div className="flex flex-col h-full w-[calc(100vw-56px)]">
           {/* Main Top Bar */}
           <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
             <button className="p-1.5 rounded-md relative -ml-1.5">

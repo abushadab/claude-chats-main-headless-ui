@@ -12,8 +12,6 @@ import { notFound, useRouter } from "next/navigation"
 import type { Project, ActiveMember } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
 import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
-import { PanelLeftClose, PanelLeft } from "lucide-react"
-import { useSidebar } from "@/components/ui/headless-sidebar"
 
 interface PageProps {
   params: Promise<{
@@ -24,8 +22,6 @@ interface PageProps {
 
 function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string, channelSlug: string }) {
   const { projects } = useProjects() // For sidebar display
-  const { state, toggleSidebar } = useSidebar()
-  const collapsed = state === "collapsed"
   const router = useRouter()
   
   // Check localStorage for cached workspace data
@@ -114,6 +110,12 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
   } = workspaceData;
 
+  // Safety check for current_channel
+  if (!current_channel) {
+    console.error('No current channel found in workspace data');
+    return null;
+  }
+
   return (
     <div className="h-screen flex w-full bg-background overflow-hidden">
       {/* Main sidebar with projects */}
@@ -122,22 +124,9 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         isLoading={false}
       />
       
-      {/* Main content area with calculated width based on sidebar state */}
-      <div className={`flex flex-col h-full ${
-        collapsed ? 'w-[calc(100vw-56px)]' : 'w-[calc(100vw-256px)]'
-      }`}>
+      {/* Main content area with fixed width */}
+      <div className="flex flex-col h-full w-[calc(100vw-56px)]">
         <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
-          <button
-            onClick={() => toggleSidebar()}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors relative -ml-1.5"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeft className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <PanelLeftClose className="h-5 w-5 text-muted-foreground" />
-            )}
-          </button>
           {/* Active members indicator with stats from workspace */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">

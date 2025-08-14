@@ -2,13 +2,9 @@
 
 export const UI_DIMENSIONS = {
   sidebar: {
-    collapsed: 'w-14', // 56px
-    expanded: 'w-64',  // 256px
+    width: 'w-14', // 56px (fixed width)
     logoSize: 40,
-    projectIcon: {
-      collapsed: 'w-8 h-8',
-      expanded: 'w-8 h-8',
-    }
+    projectIcon: 'w-8 h-8',
   },
   channels: {
     itemHeight: 'h-8', // 32px

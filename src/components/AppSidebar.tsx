@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { Settings, Plus, CheckCircle, Sparkles, ChevronDown, User, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Settings, Plus, CheckCircle, Sparkles, User, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { DiscordTooltip } from "@/components/ui/discord-tooltip";
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/headless-sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/headless-button";
@@ -33,15 +33,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarProps) {
   const router = useRouter();
-  const { state } = useSidebar();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const collapsed = isHydrated ? state === "collapsed" : false;
   const { toast } = useToast();
-  
-  // Set hydrated state after mount
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
   
   // Use real projects API
   const { projects, createProject } = useProjects();
@@ -176,17 +168,15 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   };
 
   // User Profile Section Component
-  const UserProfileSection = ({ collapsed }: { collapsed: boolean }) => {
+  const UserProfileSection = () => {
     const { user, logout } = useAuth();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     
     if (!user) {
       return (
-        <div className={`h-12 bg-sidebar flex items-center flex-shrink-0 ${
-          collapsed ? 'px-2 justify-center' : 'px-3'
-        }`}>
-          <Skeleton className={collapsed ? "h-9 w-9 rounded-full" : "h-10 w-full rounded-lg"} />
+        <div className="h-12 bg-sidebar flex items-center justify-center flex-shrink-0 px-2">
+          <Skeleton className="h-9 w-9 rounded-full" />
         </div>
       );
     }
@@ -213,41 +203,26 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
     };
     
     const userInitials = getInitials(user.fullName || user.username);
+    const userName = user.fullName || user.username;
     
     return (
-      <div className={`h-12 bg-sidebar flex items-center flex-shrink-0 border-t border-border ${
-        collapsed ? 'px-2 justify-center' : 'px-3'
-      }`}>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              className={collapsed
-                ? 'h-10 w-10 p-0 flex items-center justify-center hover:bg-accent rounded-lg transition-colors'
-                : 'w-full flex items-center gap-3 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors'
-              }
-              title={collapsed ? user.fullName || user.username : undefined}
+      <div className="h-12 bg-sidebar flex items-center justify-center flex-shrink-0 border-t border-border px-2">
+        <DiscordTooltip content={userName}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="h-10 w-10 p-0 flex items-center justify-center hover:bg-accent rounded-lg transition-colors">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent 
+              className="w-64 p-0" 
+              align="start"
+              side="top"
             >
-              <Avatar className={collapsed ? "h-8 w-8" : "h-7 w-7"}>
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-              {!collapsed && (
-                <>
-                  <div className="flex-1 text-left">
-                    <div className="text-sm font-medium truncate">{user.fullName || user.username}</div>
-                    <div className="text-xs text-muted-foreground">Online</div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="w-64 p-0" 
-            align={collapsed ? "start" : "end"}
-            side="top"
-          >
             <div className="p-4 border-b">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
@@ -278,72 +253,50 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
               </button>
             </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+        </DiscordTooltip>
       </div>
     );
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14 collapsed-sidebar transition-all duration-300" : "w-64 transition-all duration-300"} collapsible="icon">
-      <SidebarContent className={`bg-sidebar flex flex-col ${collapsed ? 'collapsed-content' : ''}`}>
+    <Sidebar className="w-14">
+      <SidebarContent className="bg-sidebar flex flex-col">
         {/* Fixed Header Section - Always show logo */}
-        <div className={`h-14 flex items-center bg-sidebar flex-shrink-0 overflow-hidden ${collapsed ? 'justify-center collapsed-header' : 'px-3 justify-start'}`}>
-          {!collapsed ? (
-            <div className="flex items-center space-x-3">
+        <div className="h-14 flex items-center justify-center bg-sidebar flex-shrink-0">
+          <DiscordTooltip content="Hudhud">
+            <div>
               <Image 
                 src="/hudhud-logo.svg" 
                 alt="Hudhud" 
                 width={40}
                 height={40}
-                className="rounded-[8px] flex-shrink-0"
+                className="rounded-[8px] flex-shrink-0 cursor-pointer"
               />
-              <h1 className="font-semibold text-sidebar-foreground whitespace-nowrap">
-                Hudhud
-              </h1>
             </div>
-          ) : (
-            <Image 
-              src="/hudhud-logo.svg" 
-              alt="Hudhud" 
-              width={40}
-              height={40}
-              className="rounded-[8px] flex-shrink-0"
-            />
-          )}
+          </DiscordTooltip>
         </div>
         
         {/* Scrollable Content */}
         <SidebarGroup className="flex-1 overflow-y-auto py-2">
-          <SidebarGroupContent className={collapsed ? "!space-y-3" : ""}>
-            <SidebarMenu className={collapsed ? "!space-y-3" : ""}>
+          <SidebarGroupContent className="space-y-1">
+            <SidebarMenu className="space-y-1 !space-y-3">
               {isLoading && projects.length === 0 ? (
                 // Loading skeleton - only show if no cached data
                 Array.from({ length: 5 }).map((_, index) => {
                   const isFirst = index === 0;
                   return (
-                    <SidebarMenuItem key={`skeleton-${index}`} className={collapsed ? "flex items-center justify-center" : ""}>
+                    <SidebarMenuItem key={`skeleton-${index}`} className="flex items-center justify-center">
                       <SidebarMenuButton 
-                        className={collapsed 
-                          ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative`
-                          : `w-full h-10 justify-start px-2 hover:bg-transparent relative ${
-                              isFirst ? 'bg-primary/20' : ''
-                            }`
-                        }
+                        className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative"
                         disabled
                       >
-                        {collapsed ? (
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isFirst ? 'ring-2 ring-offset-2 ring-offset-background ring-primary' : ''
-                          }`}>
-                            <Skeleton className="w-full h-full rounded-lg" />
-                          </div>
-                        ) : (
-                          <div className="flex items-center w-full">
-                            <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
-                            <Skeleton className="ml-3 h-4 w-24" />
-                          </div>
-                        )}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isFirst ? 'ring-2 ring-offset-2 ring-offset-background ring-primary' : ''
+                        }`}>
+                          <Skeleton className="w-full h-full rounded-lg" />
+                        </div>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
@@ -356,47 +309,28 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
                 const hasUnread = project.unread_count && project.unread_count > 0;
                 
                 return (
-                  <SidebarMenuItem key={project.project_id} className={collapsed ? "flex items-center justify-center" : ""}>
-                    <SidebarMenuButton 
-                      className={collapsed 
-                        ? `collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative`
-                        : `w-full h-10 justify-start px-2 hover:bg-transparent relative ${
-                            isSelected ? 'bg-primary/20' : ''
-                          }`
-                      }
-                      onClick={() => handleProjectSelect(project.project_id)}
-                    >
-                      {collapsed ? (
-                        <>
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${colors.bg} ${
-                            isSelected 
-                              ? `ring-2 ring-offset-2 ring-offset-background` 
-                              : `opacity-60`
-                          }`} style={isSelected ? {
-                            '--tw-ring-color': colors.hex
-                          } as React.CSSProperties : {}}>
-                            <span className={`text-sm font-bold ${colors.text}`}>
-                              {initials}
-                            </span>
-                          </div>
-                          {hasUnread && (
-                            <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-background" />
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex items-center w-full">
-                          <div className={`w-8 h-8 ${colors.bg} ${colors.text} rounded-lg text-xs font-semibold flex items-center justify-center flex-shrink-0`}>
+                  <SidebarMenuItem key={project.project_id} className="flex items-center justify-center">
+                    <DiscordTooltip content={project.name}>
+                      <SidebarMenuButton 
+                        className="collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative"
+                        onClick={() => handleProjectSelect(project.project_id)}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${colors.bg} ${
+                          isSelected 
+                            ? `ring-2 ring-offset-2 ring-offset-background` 
+                            : `opacity-60`
+                        }`} style={isSelected ? {
+                          '--tw-ring-color': colors.hex
+                        } as React.CSSProperties : {}}>
+                          <span className={`text-sm font-bold ${colors.text}`}>
                             {initials}
-                          </div>
-                          <span className="ml-3 truncate flex-1 text-left">{project.name}</span>
-                          {hasUnread && (
-                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                              {project.unread_count}
-                            </span>
-                          )}
+                          </span>
                         </div>
-                      )}
-                    </SidebarMenuButton>
+                        {hasUnread && (
+                          <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-background" />
+                        )}
+                      </SidebarMenuButton>
+                    </DiscordTooltip>
                   </SidebarMenuItem>
                 );
                 })
@@ -404,27 +338,17 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
             </SidebarMenu>
             
             {/* Create Project Button */}
-            <div className={`mt-2 ${collapsed ? 'flex items-center justify-center' : 'px-0'}`}>
+            <div className="mt-2 flex items-center justify-center">
               <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={collapsed 
-                      ? `w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent`
-                      : `w-full h-10 justify-start px-2 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent rounded-lg transition-colors`
-                    }
-                  >
-                    {collapsed ? (
+                  <DiscordTooltip content="Create Project">
+                    <Button
+                      variant="ghost"
+                      className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent"
+                    >
                       <Plus className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <div className="flex items-center w-full">
-                        <div className="w-8 h-8 border border-dashed border-muted-foreground/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Plus className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <span className="ml-3 text-sm text-muted-foreground">Create Project</span>
-                      </div>
-                    )}
-                  </Button>
+                    </Button>
+                  </DiscordTooltip>
                 </DialogTrigger>
                 <DialogContent className="max-w-lg">
                   <DialogHeader>
@@ -549,26 +473,21 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         </SidebarGroup>
         
         {/* User Profile */}
-        <UserProfileSection collapsed={collapsed} />
+        <UserProfileSection />
         
         {/* Bottom Bar with Settings */}
-        <div className={`h-12 bg-sidebar flex items-center flex-shrink-0 ${
-          collapsed ? 'px-2 justify-center' : 'px-3'
-        }`}>
+        <div className="h-12 bg-sidebar flex items-center flex-shrink-0 px-2 justify-center">
           {isLoading && projects.length === 0 ? (
-            <Skeleton className={collapsed ? "h-9 w-9 rounded-lg" : "h-10 w-full rounded-lg"} />
+            <Skeleton className="h-9 w-9 rounded-lg" />
           ) : (
-            <button
-              className={collapsed
-                ? 'p-2 hover:bg-accent rounded-lg transition-colors'
-                : 'w-full flex items-center gap-3 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors'
-              }
-              title={collapsed ? 'Settings' : undefined}
-              onClick={() => router.push('/settings')}
-            >
-              <Settings className={collapsed ? 'h-5 w-5 text-muted-foreground' : 'h-4 w-4 text-muted-foreground'} />
-              {!collapsed && <span className="text-sm">Settings</span>}
-            </button>
+            <DiscordTooltip content="Settings">
+              <button
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
+                onClick={() => router.push('/settings')}
+              >
+                <Settings className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </DiscordTooltip>
           )}
         </div>
       </SidebarContent>

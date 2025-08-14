@@ -1,14 +1,11 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { Menu } from 'lucide-react'
+import { createContext, useContext, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SidebarContextType {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
-  collapsed: boolean
-  setCollapsed: (collapsed: boolean) => void
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
@@ -19,83 +16,36 @@ export function useSidebar() {
     throw new Error('useSidebar must be used within a SidebarProvider')
   }
   return {
-    state: context.collapsed ? 'collapsed' : 'expanded',
     isOpen: context.isOpen,
     setIsOpen: context.setIsOpen,
-    collapsed: context.collapsed,
-    toggleSidebar: () => context.setCollapsed(!context.collapsed)
   }
 }
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(true)
-  const [collapsed, setCollapsed] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  // Load collapsed state from localStorage on mount
-  useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed')
-    if (savedCollapsed !== null) {
-      setCollapsed(savedCollapsed === 'true')
-    }
-    setIsHydrated(true)
-  }, [])
-
-  // Save collapsed state to localStorage whenever it changes
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem('sidebar-collapsed', collapsed.toString())
-    }
-  }, [collapsed, isHydrated])
-
-  // Don't render until hydrated to prevent flash
-  if (!isHydrated) {
-    return (
-      <SidebarContext.Provider value={{ isOpen, setIsOpen, collapsed: false, setCollapsed }}>
-        <div className="opacity-0">
-          {children}
-        </div>
-      </SidebarContext.Provider>
-    )
-  }
+  // Sidebar is always visible in our new design
+  const isOpen = true
+  const setIsOpen = () => {}
 
   return (
-    <SidebarContext.Provider value={{ isOpen, setIsOpen, collapsed, setCollapsed }}>
+    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
       {children}
     </SidebarContext.Provider>
   )
 }
 
-export function SidebarTrigger({ className }: { className?: string }) {
-  const { toggleSidebar } = useSidebar()
-  
-  return (
-    <button
-      onClick={toggleSidebar}
-      className={cn(
-        "p-2 hover:bg-accent rounded-md transition-colors",
-        className
-      )}
-    >
-      <Menu className="h-5 w-5" />
-    </button>
-  )
-}
+// SidebarTrigger removed - no longer needed without expand/collapse
 
 interface SidebarProps {
   children: ReactNode
   className?: string
-  collapsible?: 'icon' | 'none'
 }
 
-export function Sidebar({ children, className, collapsible = 'none' }: SidebarProps) {
-  const { collapsed } = useSidebar()
-  
+export function Sidebar({ children, className }: SidebarProps) {
+  // Sidebar is always 56px wide
   return (
     <aside
       className={cn(
-        "border-r border-border bg-sidebar transition-all duration-300 ease-in-out",
-        collapsed && collapsible === 'icon' ? "w-14" : "w-64",
+        "w-14 border-r border-border bg-sidebar",
         className
       )}
     >
