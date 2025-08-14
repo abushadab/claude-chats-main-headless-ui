@@ -12,6 +12,7 @@ import { notFound, useRouter } from "next/navigation"
 import type { Project, ActiveMember } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
 import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
+import { Bell } from "lucide-react"
 
 interface PageProps {
   params: Promise<{
@@ -153,6 +154,19 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               {stats?.members_online || 0} online
             </span>
           </div>
+          
+          {/* Notification bell */}
+          <button 
+            className="relative p-2 hover:bg-accent rounded-lg transition-colors"
+            onClick={() => console.log('Notifications clicked')}
+          >
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            {stats?.unread_total > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {stats.unread_total > 9 ? '9+' : stats.unread_total}
+              </span>
+            )}
+          </button>
         </header>
         
         <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
