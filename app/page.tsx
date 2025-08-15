@@ -14,8 +14,14 @@ export default function HomePage() {
   // Simple redirect without using projects hook to avoid cache conflicts
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
-      // Just redirect to default workspace, let workspace API handle the rest
-      router.replace('/project/default/channel/general');
+      // Check for last visited URL in localStorage
+      const lastVisitedUrl = localStorage.getItem('last_visited_url');
+      if (lastVisitedUrl) {
+        router.replace(lastVisitedUrl);
+      } else {
+        // Just redirect to default workspace, let workspace API handle the rest
+        router.replace('/project/default/channel/general');
+      }
     }
   }, [isAuthenticated, isAuthLoading, router]);
 

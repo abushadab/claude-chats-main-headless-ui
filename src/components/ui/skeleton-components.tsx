@@ -106,7 +106,7 @@ export function ProjectHeaderSkeleton() {
 }
 
 // Auth loading skeleton - shows chat app layout structure
-export function AuthLoadingSkeleton() {
+export function AuthLoadingSkeleton({ activeProjectIndex = 0, activeChannelIndex = 0 }: { activeProjectIndex?: number; activeChannelIndex?: number } = {}) {
   return (
     <div className="h-screen flex w-full bg-background overflow-hidden">
       {/* Main Layout */}
@@ -129,12 +129,12 @@ export function AuthLoadingSkeleton() {
               <nav className="space-y-1 !space-y-3">
                 {/* Show 5 project skeletons matching the actual sidebar */}
                 {Array.from({ length: 5 }).map((_, index) => {
-                  const isFirst = index === 0;
+                  const isActive = index === activeProjectIndex;
                   return (
                     <div key={index} className="flex items-center justify-center">
                       <button className="collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative" disabled>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isFirst ? 'ring-2 ring-offset-2 ring-offset-background ring-primary' : ''
+                          isActive ? 'ring-2 ring-offset-2 ring-offset-background ring-primary' : ''
                         }`}>
                           <Skeleton className="w-full h-full rounded-lg" />
                         </div>
@@ -204,13 +204,13 @@ export function AuthLoadingSkeleton() {
             <div className="space-y-1 px-2">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} className={`flex items-center h-8 space-x-2 px-2 rounded-md ${
-                  index === 0 ? 'bg-primary/20' : ''
+                  index === activeChannelIndex ? 'bg-primary/20' : ''
                 }`}>
                   <Hash className={`h-3 w-3 flex-shrink-0 ${
-                    index === 0 ? 'text-foreground/70' : 'text-muted-foreground/50'
+                    index === activeChannelIndex ? 'text-foreground/70' : 'text-muted-foreground/50'
                   }`} />
                   <Skeleton className={`h-3 w-[70%] ${
-                    index === 0 ? 'bg-primary/30' : ''
+                    index === activeChannelIndex ? 'bg-primary/30' : ''
                   }`} />
                 </div>
               ))}

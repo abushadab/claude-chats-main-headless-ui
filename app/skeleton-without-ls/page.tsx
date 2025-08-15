@@ -1,29 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components";
-import { AuthLoadingSkeletonV2 } from "@/components/ui/skeleton-components-v2";
+import { SkeletonTestNav } from "@/components/SkeletonTestNav";
 
-export default function SkeletonTestPage() {
-  const [version, setVersion] = useState<"without-ls" | "with-ls">("with-ls");
-  const searchParams = useSearchParams();
+export default function SkeletonWithoutLSPage() {
   const [activeIndices, setActiveIndices] = useState({ project: 0, channel: 0 });
   
   useEffect(() => {
-    // First check URL params
-    const urlProjectIndex = searchParams.get("project");
-    const urlChannelIndex = searchParams.get("channel");
-    
-    if (urlProjectIndex || urlChannelIndex) {
-      setActiveIndices({
-        project: parseInt(urlProjectIndex || "0"),
-        channel: parseInt(urlChannelIndex || "0")
-      });
-      return;
-    }
-    
-    // If no URL params, check localStorage for last visited
+    // Check localStorage for last visited project/channel
     const lastVisitedProject = localStorage.getItem('last_visited_project');
     const lastVisitedChannel = localStorage.getItem('last_visited_channel');
     
@@ -70,32 +55,12 @@ export default function SkeletonTestPage() {
       
       setActiveIndices({ project: projectIndex, channel: channelIndex });
     }
-  }, [searchParams]);
+  }, []);
 
   return (
-    <div>
-      {/* Version switcher */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg p-2 space-x-2">
-        <button
-          className={`px-3 py-1 rounded ${version === "without-ls" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-          onClick={() => setVersion("without-ls")}
-        >
-          Skeleton (without ls)
-        </button>
-        <button
-          className={`px-3 py-1 rounded ${version === "with-ls" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-          onClick={() => setVersion("with-ls")}
-        >
-          Skeleton (with ls)
-        </button>
-      </div>
-      
-      {/* Show selected version */}
-      {version === "without-ls" ? (
-        <AuthLoadingSkeleton activeProjectIndex={activeIndices.project} activeChannelIndex={activeIndices.channel} />
-      ) : (
-        <AuthLoadingSkeletonV2 />
-      )}
-    </div>
+    <>
+      <AuthLoadingSkeleton activeProjectIndex={activeIndices.project} activeChannelIndex={activeIndices.channel} />
+      <SkeletonTestNav />
+    </>
   );
 }
