@@ -186,26 +186,6 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     return workspaceData;
   }, [workspaceData]);
   
-  // Only show loading screen on very first app load (no cached data anywhere)
-  // Skip loading screen if we have any cached data for this project/channel
-  const hasCachedData = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    
-    // Check for cached projects
-    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
-    if (!hasCachedProjects) return false;
-    
-    // Check if we have workspace cache for this specific page
-    const workspaceCacheKey = `workspace_${projectSlug}_${channelSlug}`;
-    const hasWorkspaceCache = localStorage.getItem(workspaceCacheKey);
-    
-    return true; // We have at least projects cache, enough to show UI
-  }, [projectSlug, channelSlug]);
-  
-  if (!displayData && !hasCachedData && shouldShowLoadingScreen()) {
-    return <LoadingScreen />;
-  }
-
   // Create default data structure when no displayData but we want to show UI
   // Use empty string for IDs to prevent API calls with invalid UUIDs
   const defaultData = {
@@ -232,6 +212,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
 
   // Use displayData if available, otherwise try to build from cached data
   // Memoize the cache building to prevent rebuilding on every render
+  // MUST be called before any conditional returns to follow React hooks rules
   const dataToUse = useMemo(() => {
     if (displayData) {
       return displayData;
@@ -287,7 +268,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     // Always fall back to default data if we don't have any data yet
     // This ensures we never show blank screen
     return fallbackData || defaultData;
-  }, [displayData, projectSlug, channelSlug]); // Include dependencies for cache rebuilding
+  }, [displayData, projectSlug, channelSlug, defaultData]); // Include dependencies for cache rebuilding
 
   // Backend now guarantees all fields are present (or we provide defaults)
   const { 
@@ -381,6 +362,26 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const markAllAsRead = () => {
     // Mark all notifications as read - implementation pending
   };
+
+  // Check if we should show loading screen - AFTER all hooks are called
+  const hasCachedData = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check for cached projects
+    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
+    if (!hasCachedProjects) return false;
+    
+    // Check if we have workspace cache for this specific page
+    const workspaceCacheKey = `workspace_${projectSlug}_${channelSlug}`;
+    const hasWorkspaceCache = localStorage.getItem(workspaceCacheKey);
+    
+    return true; // We have at least projects cache, enough to show UI
+  }, [projectSlug, channelSlug]);
+  
+  // Now we can safely return early if needed
+  if (!displayData && !hasCachedData && shouldShowLoadingScreen()) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="h-screen flex flex-col w-full bg-background overflow-hidden">
