@@ -155,13 +155,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
             </div>
             
             <div className="space-y-1 px-2">
-              {isLoading && projectChannels.length === 0 ? (
-                <div className="space-y-2 animate-pulse">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-8 bg-muted-foreground/10 rounded-md" />
-                  ))}
-                </div>
-              ) : textChannels.length === 0 ? (
+              {textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
                   No channels found
                 </div>
