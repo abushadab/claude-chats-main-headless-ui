@@ -73,19 +73,27 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         if (cachedChannels && cachedChannels.length > 0) {
           // Use the first channel from cache
           const firstChannel = cachedChannels[0];
+          console.log('Using first channel from cache:', firstChannel.slug || firstChannel.name);
           targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
-        } else if (cache.isChannelsCacheEnabled()) {
-          // If channels caching is enabled but no cache found, fetch channels
+        } else {
+          // No cache found, fetch channels to determine the first channel
+          console.log('No cached channels, fetching for project:', projectId);
           const { chatService } = await import('@/services/chat.service');
           const channels = await chatService.getChannels(projectId);
           
           if (channels && channels.length > 0) {
-            // Cache the channels for future use
-            cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
+            console.log('Fetched channels:', channels.map(c => c.slug || c.name));
+            // Cache the channels for future use if caching is enabled
+            if (cache.isChannelsCacheEnabled()) {
+              cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
+            }
             
             // Use the first channel
             const firstChannel = channels[0];
+            console.log('Using first channel:', firstChannel.slug || firstChannel.name);
             targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
+          } else {
+            console.log('No channels found for project:', projectId);
           }
         }
       } catch (error) {
