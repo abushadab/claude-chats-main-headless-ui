@@ -153,13 +153,26 @@ axiosInstance.interceptors.response.use(
           }
         }
         
-        // Refresh failed, redirect to login
+        // Refresh failed - clear auth data but don't logout immediately
+        // Let the AuthContext handle the redirect to avoid loops
         processQueue(error, null);
-        await authService.logout();
+        authService.clearAuthData();
+        
+        // Redirect to login only if not already on login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
         return Promise.reject(error);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        await authService.logout();
+        authService.clearAuthData();
+        
+        // Redirect to login only if not already on login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

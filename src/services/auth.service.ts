@@ -84,13 +84,13 @@ class AuthService {
     }
 
     const expiry = parseInt(expiryTime, 10);
-    return Date.now() > expiry - config.auth.tokenRefreshBuffer;
+    return Date.now() + config.auth.tokenRefreshBuffer > expiry;
   }
 
   /**
    * Clear all auth data
    */
-  private clearAuthData(): void {
+  clearAuthData(): void {
     localStorage.removeItem(config.auth.tokenKey);
     localStorage.removeItem('tokenExpiry');
     localStorage.removeItem(config.auth.userKey);
@@ -217,11 +217,21 @@ class AuthService {
 
   private async _performRefresh(): Promise<boolean> {
     try {
+      console.log('🔄 Attempting token refresh...');
+      
+      // Explicitly ensure credentials are included
       const response = await this.api.post<{
         success: boolean;
         accessToken: string;
         expiresIn?: number;
-      }>('/refresh');
+      }>('/refresh', {}, {
+        withCredentials: true, // Explicitly set again to be sure
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('✅ Refresh response:', response.data.success);
       
       if (response.data.success && response.data.accessToken) {
         localStorage.setItem(config.auth.tokenKey, response.data.accessToken);
@@ -235,9 +245,15 @@ class AuthService {
       }
       
       return false;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      this.clearAuthData();
+    } catch (error: any) {
+      console.error('❌ Token refresh failed:', {
+        message: error.response?.data?.error?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      // Don't clear auth data immediately - let the caller handle it
+      // This prevents the redirect loop
       return false;
     }
   }

@@ -236,15 +236,17 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     );
   }
 
-  if (!channel) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Channel not found</p>
-        </div>
-      </div>
-    );
-  }
+  // If channel is not found, create a basic channel object from the selectedChannelId
+  // This ensures we always have channel data to show the header while messages load
+  const channelToUse = channel || {
+    channel_id: selectedChannelId,
+    name: selectedChannelId.replace(/-/g, ' '),
+    slug: selectedChannelId,
+    description: 'Loading channel...',
+    type: 'text' as const,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
 
   // Additional functions and handlers
   const handleSendMessage = async () => {
@@ -325,7 +327,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
       <div className="flex-1 flex flex-col">
         {/* Chat Header */}
         <ChatHeader 
-          channel={channel}
+          channel={channelToUse}
           project={project}
           showRightSidebar={showRightSidebar}
           onToggleSidebar={() => {
@@ -348,7 +350,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
         {/* Messages Area */}
         <MessagesArea
           filteredMessages={filteredMessages}
-          channel={channel}
+          channel={channelToUse}
           selectedChannelId={selectedChannelId}
           isLoadingMessages={isLoadingMessages || isChannelChanging}
           pinnedMessageIds={pinnedMessageIds}
@@ -453,7 +455,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
       <ChannelSettingsModal 
         showChannelSettingsModal={showChannelSettingsModal}
         onClose={() => setShowChannelSettingsModal(false)}
-        channel={channel}
+        channel={channelToUse}
         notificationSettings={notificationSettings}
         onNotificationSettingsChange={setNotificationSettings}
         onSave={() => {
