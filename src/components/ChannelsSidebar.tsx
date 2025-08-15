@@ -16,10 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 interface ChannelsSidebarProps {
   selectedProjectId: string;
   selectedChannelId: string;
+  selectedChannelSlug?: string; // Channel slug from URL for matching
   channels?: Channel[]; // Pre-fetched channels from parent
 }
 
-export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels: preFetchedChannels }: ChannelsSidebarProps) {
+export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selectedChannelSlug, channels: preFetchedChannels }: ChannelsSidebarProps) {
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
@@ -171,17 +172,23 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
                   {isLoading ? "Loading channels..." : "No channels found"}
                 </div>
               ) : (
-                textChannels.map((channel) => (
-                  <Button
-                    key={channel.channel_id}
-                    variant="ghost"
-                    className={`w-full justify-start h-8 px-2 ${
-                      selectedChannelId === channel.channel_id 
-                        ? 'bg-primary/20 hover:bg-primary/25 text-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
-                    }`}
-                    onClick={() => handleChannelSelect(channel)}
-                  >
+                textChannels.map((channel) => {
+                  // Check if this channel is selected by ID or slug
+                  const isSelected = selectedChannelId === channel.channel_id || 
+                    (selectedChannelSlug && (channel.slug === selectedChannelSlug || 
+                    channel.name.toLowerCase().replace(/\s+/g, '-') === selectedChannelSlug));
+                  
+                  return (
+                    <Button
+                      key={channel.channel_id}
+                      variant="ghost"
+                      className={`w-full justify-start h-8 px-2 ${
+                        isSelected
+                          ? 'bg-primary/20 hover:bg-primary/25 text-foreground' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
+                      }`}
+                      onClick={() => handleChannelSelect(channel)}
+                    >
                     <Hash className="h-3 w-3 mr-2" />
                     <span className="text-sm">{channel.name}</span>
                     {channel.unread_count > 0 && (
@@ -190,7 +197,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
                       </span>
                     )}
                   </Button>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

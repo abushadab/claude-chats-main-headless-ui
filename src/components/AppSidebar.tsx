@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { DiscordTooltip } from "@/components/ui/discord-tooltip";
-import { cache } from "@/lib/cache";
+import { cache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useProjects } from "@/hooks/useProjects";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@/types/project.types";
+import type { Channel } from "@/types/chat.types";
 
 interface AppSidebarProps {
   selectedProjectId: string;
@@ -45,7 +46,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleProjectSelect = (projectId: string) => {
+  const handleProjectSelect = async (projectId: string) => {
     // Prevent double navigation and clicking on already selected project
     if (selectedProjectId === projectId) return;
     
@@ -53,13 +54,45 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
     const project = projects.find(p => p.project_id === projectId);
     if (!project) return;
     
-    // Check if we have a last visited channel for this project (only if workspace caching is enabled)
+    // Check if we have a last visited channel for this project (only if projects caching is enabled)
     const lastChannelKey = `last_channel_${projectId}`;
-    const lastChannel = cache.isWorkspaceCacheEnabled() ? localStorage.getItem(lastChannelKey) : null;
+    const lastChannel = cache.isProjectsCacheEnabled() ? localStorage.getItem(lastChannelKey) : null;
     
-    const targetUrl = lastChannel 
-      ? `/project/${project.slug}/channel/${lastChannel}`
-      : `/project/${project.slug}/channel/general`;
+    let targetUrl = `/project/${project.slug}/channel/general`; // default fallback
+    
+    if (lastChannel) {
+      // Use the last visited channel
+      targetUrl = `/project/${project.slug}/channel/${lastChannel}`;
+    } else {
+      // No last channel saved, try to get the first channel for this project
+      try {
+        // Check if we have cached channels for this project
+        const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${projectId}`;
+        const cachedChannels = cache.get<Channel[]>(channelsCacheKey, 'channels');
+        
+        if (cachedChannels && cachedChannels.length > 0) {
+          // Use the first channel from cache
+          const firstChannel = cachedChannels[0];
+          targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
+        } else if (cache.isChannelsCacheEnabled()) {
+          // If channels caching is enabled but no cache found, fetch channels
+          const { chatService } = await import('@/services/chat.service');
+          const channels = await chatService.getChannels(projectId);
+          
+          if (channels && channels.length > 0) {
+            // Cache the channels for future use
+            cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
+            
+            // Use the first channel
+            const firstChannel = channels[0];
+            targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch channels for project navigation:', error);
+        // Fall back to general channel
+      }
+    }
     
     // Navigate immediately
     router.push(targetUrl);

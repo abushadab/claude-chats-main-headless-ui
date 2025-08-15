@@ -504,6 +504,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
             <ChannelsSidebar
               selectedProjectId={project.project_id}
               selectedChannelId={current_channel.channel_id}
+              selectedChannelSlug={channelSlug}
               channels={workspaceData ? channels : undefined}
             />
             
