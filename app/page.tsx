@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useProjects } from "@/hooks/useProjects"
 import { useAuth } from "@/contexts/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { LoadingScreen } from "@/components/LoadingScreen"

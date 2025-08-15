@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Settings, Plus, CheckCircle, Sparkles, User, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";

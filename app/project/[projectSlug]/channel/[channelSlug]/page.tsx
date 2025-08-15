@@ -9,8 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
 import { notFound, useRouter } from "next/navigation"
-import type { Project, ActiveMember } from "@/types/project.types"
-import type { Channel } from "@/types/chat.types"
+import type { Project } from "@/types/project.types"
 import { LoadingScreen } from "@/components/LoadingScreen"
 import { Bell } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -27,7 +26,7 @@ interface PageProps {
 }
 
 function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string, channelSlug: string }) {
-  const { projects } = useProjects() // For sidebar display
+  const { } = useProjects() // For sidebar display
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
   
@@ -128,7 +127,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { 
     project, 
     channels = [], 
-    active_members = [], 
+    active_members = [], // eslint-disable-line @typescript-eslint/no-unused-vars 
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
   } = workspaceData;
 
