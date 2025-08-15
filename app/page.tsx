@@ -23,11 +23,15 @@ export default function HomePage() {
         router.replace('/project/default/channel/general');
       }
     }
-  }, [isAuthenticated, isAuthLoading, router]);
+  }, [isAuthenticated, isAuthLoading]); // Removed router to prevent infinite loops
 
+  // Only show loading screen if we're still loading auth
+  // Once auth is loaded, the redirect will happen
   return (
     <ProtectedRoute>
-      {shouldShowLoadingScreen() && <LoadingScreen />}
+      {(isAuthLoading || !isAuthenticated) && shouldShowLoadingScreen() ? (
+        <LoadingScreen />
+      ) : null}
     </ProtectedRoute>
   )
 }

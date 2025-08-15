@@ -27,23 +27,24 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const [previousChannels, setPreviousChannels] = useState<Channel[]>([]);
   
   // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
-  // Also skip if selectedProjectId is a fake loading ID
-  // Pass a special value 'skip' to indicate we don't want to fetch
-  const shouldSkipFetch = preFetchedChannels || selectedProjectId === 'loading';
+  // Don't skip based on project ID value - let useChannels handle invalid IDs
+  const shouldSkipFetch = !!preFetchedChannels;
   const { 
     channels: fetchedChannels, 
     isLoading, 
     error, 
     createChannel, 
     refreshChannels 
-  } = useChannels(shouldSkipFetch ? 'skip' as any : selectedProjectId);
+  } = useChannels(shouldSkipFetch ? 'skip' : selectedProjectId);
   
   // Use pre-fetched channels if available
   const projectChannels = preFetchedChannels || fetchedChannels;
   
-  // Update previous channels when we get new data
+  // Update previous channels when we get new data (even if empty)
   React.useEffect(() => {
-    if (projectChannels.length > 0 && !isLoading) {
+    if (!isLoading) {
+      // Always update previous channels, even if empty
+      // This prevents showing wrong project's channels during transitions
       setPreviousChannels(projectChannels);
     }
   }, [projectChannels, isLoading]);
@@ -58,14 +59,23 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const textChannels = displayChannels;
 
   // Find current project from real data
-  const project = projects.find(p => p.project_id === selectedProjectId) || {
+  const project = projects.find(p => p.project_id === selectedProjectId);
+  
+  // Create a display-only fallback if project not found
+  const displayProject = project || {
     project_id: selectedProjectId,
-    name: 'Unknown Project',
+    name: 'Loading...',
     member_count: 0,
-    slug: 'unknown'
+    slug: '' // Empty slug prevents navigation
   };
 
   const handleChannelSelect = (channel: Channel) => {
+    // Only navigate if we have a real project with a valid slug
+    if (!project || !project.slug) {
+      // console.warn('Cannot navigate: Project not found or has no slug');
+      return;
+    }
+    
     const channelSlug = channel.slug || channel.name.toLowerCase().replace(/\s+/g, '-');
     router.push(`/project/${project.slug}/channel/${channelSlug}`);
   };
@@ -87,9 +97,11 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     try {
       const newChannel = await createChannel(channelData);
       
-      // Navigate to the new channel
-      const channelSlug = newChannel.slug || newChannel.name.toLowerCase().replace(/\s+/g, '-');
-      router.push(`/project/${project.slug}/channel/${channelSlug}`);
+      // Navigate to the new channel (only if we have a real project)
+      if (project && project.slug) {
+        const channelSlug = newChannel.slug || newChannel.name.toLowerCase().replace(/\s+/g, '-');
+        router.push(`/project/${project.slug}/channel/${channelSlug}`);
+      }
       
       // Show success message
       toast({
@@ -129,8 +141,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
       <div className="h-[60px] px-4 flex items-center border-b border-border">
         <div className="w-4 h-4 rounded mr-3 flex-shrink-0 bg-primary" />
         <div>
-          <h2 className="font-bold text-foreground">{project.name}</h2>
-          <p className="text-sm text-muted-foreground">{project.member_count} members</p>
+          <h2 className="font-bold text-foreground">{displayProject.name}</h2>
+          <p className="text-sm text-muted-foreground">{displayProject.member_count} members</p>
         </div>
       </div>
 
@@ -167,9 +179,29 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1 px-2">
-              {textChannels.length === 0 ? (
+              {isLoading && textChannels.length === 0 ? (
+                // Skeleton loading state
+                <>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-28 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                </>
+              ) : textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
-                  {isLoading ? "Loading channels..." : "No channels found"}
+                  No channels found
                 </div>
               ) : (
                 textChannels.map((channel) => {
@@ -240,7 +272,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
         showCreateChannelModal={showCreateChannelModal}
         onClose={() => setShowCreateChannelModal(false)}
         projectId={selectedProjectId}
-        projectName={project.name}
+        projectName={displayProject.name}
         onChannelCreated={handleChannelCreated}
       />
     </div>

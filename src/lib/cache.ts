@@ -398,6 +398,7 @@ export const CACHE_KEYS = {
   PROJECT_PREFIX: 'project_',
   CHANNELS_PREFIX: 'channels_',
   USER_PROFILE: 'user_profile',
+  WORKSPACE_PREFIX: 'workspace_',
 } as const;
 
 // Cache TTL constants (in milliseconds)

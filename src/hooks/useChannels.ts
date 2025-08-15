@@ -22,14 +22,23 @@ interface UseChannelsReturn {
   leaveChannel: (channelId: string) => Promise<void>;
 }
 
-export function useChannels(projectId?: string): UseChannelsReturn {
+// Stable empty array to prevent re-renders
+const EMPTY_CHANNELS: Channel[] = [];
+
+export function useChannels(projectId?: string | 'skip'): UseChannelsReturn {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const cacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${projectId || 'all'}`;
 
   // Handle the 'skip' case for backward compatibility
-  // Also skip if not authenticated
-  const shouldFetch = projectId !== 'skip' && isAuthenticated && !isAuthLoading;
+  // Also skip if not authenticated or if projectId is invalid (empty/loading/placeholder)
+  const shouldFetch = Boolean(
+    projectId && 
+    projectId !== 'skip' && 
+    projectId !== 'loading' && 
+    isAuthenticated && 
+    !isAuthLoading
+  );
   
   // Skip debug logging
 
@@ -328,7 +337,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
 
   // Return the same structure regardless of shouldFetch
   return {
-    channels: shouldFetch ? channels : [],
+    channels: shouldFetch ? channels : EMPTY_CHANNELS, // Use stable empty array
     isLoading: shouldFetch ? isLoading : false,
     error: shouldFetch ? errorMessage : null,
     refreshChannels,

@@ -73,15 +73,7 @@ export function MessagesArea({
               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Welcome to #{channel.name}
               </h3>
-              <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
-                <blockquote className="text-lg italic text-muted-foreground leading-relaxed mb-4">
-                  &ldquo;{getRandomQuote(selectedChannelId).quote}&rdquo;
-                </blockquote>
-                <cite className="text-sm font-medium text-primary">
-                  — {getRandomQuote(selectedChannelId).author}
-                </cite>
-              </div>
-              <p className="text-sm text-muted-foreground mt-4">
+              <p className="text-sm text-muted-foreground">
                 Start the conversation by sending your first message below.
               </p>
             </div>

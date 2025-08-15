@@ -19,7 +19,7 @@ export function useProjects(lightweight = true) {
     refetch,
   } = useQuery({
     queryKey: ['projects', lightweight],
-    enabled: isAuthenticated && !isAuthLoading, // Only fetch when authenticated
+    enabled: Boolean(isAuthenticated && !isAuthLoading), // Only fetch when authenticated
     queryFn: async (): Promise<Project[]> => {
       console.log('🔄 Fetching projects from API...');
       const data = await projectService.getProjects(lightweight);

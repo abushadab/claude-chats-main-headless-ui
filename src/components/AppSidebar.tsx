@@ -73,16 +73,16 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         if (cachedChannels && cachedChannels.length > 0) {
           // Use the first channel from cache
           const firstChannel = cachedChannels[0];
-          console.log('Using first channel from cache:', firstChannel.slug || firstChannel.name);
+          // console.log('Using first channel from cache:', firstChannel.slug || firstChannel.name);
           targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
         } else {
           // No cache found, fetch channels to determine the first channel
-          console.log('No cached channels, fetching for project:', projectId);
+          // console.log('No cached channels, fetching for project:', projectId);
           const { chatService } = await import('@/services/chat.service');
           const channels = await chatService.getChannels(projectId);
           
           if (channels && channels.length > 0) {
-            console.log('Fetched channels:', channels.map(c => c.slug || c.name));
+            // console.log('Fetched channels:', channels.map(c => c.slug || c.name));
             // Cache the channels for future use if caching is enabled
             if (cache.isChannelsCacheEnabled()) {
               cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
@@ -90,14 +90,14 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
             
             // Use the first channel
             const firstChannel = channels[0];
-            console.log('Using first channel:', firstChannel.slug || firstChannel.name);
+            // console.log('Using first channel:', firstChannel.slug || firstChannel.name);
             targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
           } else {
-            console.log('No channels found for project:', projectId);
+            // console.log('No channels found for project:', projectId);
           }
         }
       } catch (error) {
-        console.warn('Failed to fetch channels for project navigation:', error);
+        // console.warn('Failed to fetch channels for project navigation:', error);
         // Fall back to general channel
       }
     }
@@ -128,7 +128,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         };
         
         const newProject = await createProject(projectData);
-        console.log('Project created:', newProject);
+        // console.log('Project created:', newProject);
         
         // Show success animation in modal
         setIsCreating(false);
@@ -232,7 +232,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         await logout();
         router.push('/login');
       } catch (error) {
-        console.error('Logout failed:', error);
+        // console.error('Logout failed:', error);
       } finally {
         setIsLoggingOut(false);
       }

@@ -47,7 +47,7 @@ export default function ProtectedRoute({
       }
       router.push(redirectTo);
     }
-  }, [hasToken, isAuthenticated, isLoading, requireAuth, redirectTo, router]);
+  }, [hasToken, isAuthenticated, isLoading, requireAuth, redirectTo]); // Removed router to prevent loops
 
   // Initial server render - show nothing
   if (hasToken === null && requireAuth) {
@@ -65,7 +65,7 @@ export default function ProtectedRoute({
   }
 
   // Don't render protected content if not authenticated
-  if (requireAuth && !isAuthenticated) {
+  if (requireAuth && !isAuthenticated && !isLoading) {
     return null;
   }
   
