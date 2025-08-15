@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings, Plus, CheckCircle, Sparkles, User, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { DiscordTooltip } from "@/components/ui/discord-tooltip";
+import { cache } from "@/lib/cache";
 import {
   Sidebar,
   SidebarContent,
@@ -43,30 +44,38 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   const [selectedColor, setSelectedColor] = useState("bg-blue-500");
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Reset navigation state when selectedProjectId changes (route actually changed)
+  useEffect(() => {
+    if (selectedProjectId) {
+      setIsNavigating(false);
+    }
+  }, [selectedProjectId]);
 
-  const handleProjectSelect = async (projectId: string) => {
+  const handleProjectSelect = (projectId: string) => {
+    // Prevent double navigation and clicking on already selected project
+    if (isNavigating || selectedProjectId === projectId) return;
+    
     // Find the project to get its slug
     const project = projects.find(p => p.project_id === projectId);
     if (!project) return;
     
-    // Fetch channels for this specific project only
-    try {
-      const { chatService } = await import('@/services/chat.service');
-      const projectChannels = await chatService.getChannels(projectId);
-      
-      if (projectChannels.length > 0) {
-        const firstChannel = projectChannels[0];
-        const channelSlug = firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-');
-        router.push(`/project/${project.slug}/channel/${channelSlug}`);
-      } else {
-        // No channels in project, just navigate to default channel
-        router.push(`/project/${project.slug}/channel/general`);
-      }
-    } catch (error) {
-      console.error('Error fetching project channels:', error);
-      // Fallback to general channel
-      router.push(`/project/${project.slug}/channel/general`);
-    }
+    setIsNavigating(true);
+    
+    // Check if we have a last visited channel for this project (only if workspace caching is enabled)
+    const lastChannelKey = `last_channel_${projectId}`;
+    const lastChannel = cache.isWorkspaceCacheEnabled() ? localStorage.getItem(lastChannelKey) : null;
+    
+    const targetUrl = lastChannel 
+      ? `/project/${project.slug}/channel/${lastChannel}`
+      : `/project/${project.slug}/channel/general`;
+    
+    // Navigate immediately
+    router.push(targetUrl);
+    
+    // Reset navigation state after a short delay (shorter than before)
+    setTimeout(() => setIsNavigating(false), 300);
   };
 
   const availableColors = [
@@ -296,8 +305,9 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
                   <SidebarMenuItem key={project.project_id} className="flex items-center justify-center">
                     <DiscordTooltip content={project.name}>
                       <SidebarMenuButton 
-                        className="collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative"
+                        className={`collapsed-button w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-transparent relative ${isNavigating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => handleProjectSelect(project.project_id)}
+                        disabled={isNavigating || selectedProjectId === project.project_id}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${colors.bg} ${
                           isSelected 

@@ -52,7 +52,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
       const data = await chatService.getChannels(projectId);
       
       // Cache in localStorage with TTL
-      cache.set(cacheKey, data, CACHE_TTL.CHANNELS);
+      cache.set(cacheKey, data, CACHE_TTL.CHANNELS, 'channels');
       console.log('💾 Channels cached in localStorage');
       
       return data;
@@ -65,7 +65,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     initialData: () => {
       if (!shouldFetch) return [];
       
-      const cachedData = cache.get<Channel[]>(cacheKey);
+      const cachedData = cache.get<Channel[]>(cacheKey, 'channels');
       if (cachedData) {
         console.log('🗂️ Loading channels from localStorage cache');
         // Trigger background refetch if cache is stale
@@ -83,7 +83,7 @@ export function useChannels(projectId?: string): UseChannelsReturn {
     // Prevent refetch on mount if we have fresh cached data
     refetchOnMount: (query) => {
       if (!shouldFetch) return false;
-      const hasCache = cache.has(cacheKey);
+      const hasCache = cache.has(cacheKey, 'channels');
       const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.CHANNELS);
       return !hasCache || isStale;
     },
@@ -130,8 +130,8 @@ export function useChannels(projectId?: string): UseChannelsReturn {
       });
       
       // 2. Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey) || [];
-      cache.set(cacheKey, [...cachedData, newChannel], CACHE_TTL.CHANNELS);
+      const cachedData = cache.get<Channel[]>(cacheKey, 'channels') || [];
+      cache.set(cacheKey, [...cachedData, newChannel], CACHE_TTL.CHANNELS, 'channels');
       
       // 3. Invalidate "all channels" cache if it exists
       queryClient.invalidateQueries({ queryKey: ['channels', undefined] });

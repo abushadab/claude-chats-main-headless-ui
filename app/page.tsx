@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { LoadingScreen } from "@/components/LoadingScreen"
+import { shouldShowLoadingScreen } from "@/lib/settings"
 
 export default function HomePage() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function HomePage() {
 
   return (
     <ProtectedRoute>
-      <LoadingScreen />
+      {shouldShowLoadingScreen() && <LoadingScreen />}
     </ProtectedRoute>
   )
 }

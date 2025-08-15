@@ -25,7 +25,7 @@ export function useProjects(lightweight = true) {
       const data = await projectService.getProjects(lightweight);
       
       // Cache in localStorage with TTL
-      cache.set(cacheKey, data, CACHE_TTL.PROJECTS);
+      cache.set(cacheKey, data, CACHE_TTL.PROJECTS, 'projects');
       console.log('💾 Projects cached in localStorage');
       
       return data;
@@ -35,7 +35,7 @@ export function useProjects(lightweight = true) {
     gcTime: CACHE_TTL.PROJECTS,
     // Initialize with cached data if available
     initialData: () => {
-      const cachedData = cache.get<Project[]>(cacheKey);
+      const cachedData = cache.get<Project[]>(cacheKey, 'projects');
       if (cachedData) {
         console.log('🗂️ Loading projects from localStorage cache');
         // Trigger background refetch if cache is stale
@@ -53,7 +53,7 @@ export function useProjects(lightweight = true) {
     },
     // Prevent refetch on mount if we have cached data
     refetchOnMount: (query) => {
-      const hasCache = cache.has(cacheKey);
+      const hasCache = cache.has(cacheKey, 'projects');
       const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECTS);
       return !hasCache || isStale;
     },
@@ -84,7 +84,7 @@ export function useProjects(lightweight = true) {
 
   // Cache statistics for debugging
   const getCacheStats = () => {
-    const hasCache = cache.has(cacheKey);
+    const hasCache = cache.has(cacheKey, 'projects');
     const age = cache.getAge(cacheKey);
     const isStaleCache = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECTS);
     
@@ -133,7 +133,7 @@ export function useProject(projectSlug: string, includes?: string[]) {
       const data = await projectService.getProjectBySlug(projectSlug, includes);
       
       // Cache in localStorage with TTL
-      cache.set(cacheKey, data, CACHE_TTL.PROJECT);
+      cache.set(cacheKey, data, CACHE_TTL.PROJECT, 'projects');
       console.log('💾 Project cached in localStorage');
       
       return data;
@@ -146,7 +146,7 @@ export function useProject(projectSlug: string, includes?: string[]) {
     initialData: () => {
       if (!projectSlug) return undefined;
       
-      const cachedData = cache.get<any>(cacheKey);
+      const cachedData = cache.get<any>(cacheKey, 'projects');
       if (cachedData) {
         console.log('🗂️ Loading project from localStorage cache');
         // Trigger background refetch if cache is stale
@@ -164,7 +164,7 @@ export function useProject(projectSlug: string, includes?: string[]) {
     // Prevent refetch on mount if we have fresh cached data
     refetchOnMount: (query) => {
       if (!projectSlug) return false;
-      const hasCache = cache.has(cacheKey);
+      const hasCache = cache.has(cacheKey, 'projects');
       const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECT);
       return !hasCache || isStale;
     },
@@ -199,7 +199,7 @@ export function useProject(projectSlug: string, includes?: string[]) {
 
   // Cache statistics for debugging
   const getCacheStats = () => {
-    const hasCache = cache.has(cacheKey);
+    const hasCache = cache.has(cacheKey, 'projects');
     const age = cache.getAge(cacheKey);
     const isStaleCache = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECT);
     

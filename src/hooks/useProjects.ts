@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { projectsService } from '@/services/projects.service';
 import { projectService } from '@/services/project.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { cache, CACHE_KEYS, CACHE_TTL, STALE_THRESHOLD } from '@/lib/cache';
 import type { Project, CreateProjectData } from '@/types';
 
 interface UseProjectsReturn {
@@ -26,25 +27,55 @@ export function useProjects(): UseProjectsReturn {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Load projects from API (using lightweight version for performance)
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (forceRefresh = false) => {
     // Double-check authentication before making API call
     if (!isAuthenticated) {
       setIsLoading(false);
       return;
     }
+
+    const cacheKey = CACHE_KEYS.PROJECTS;
+    
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cachedProjects = cache.get<Project[]>(cacheKey, 'projects');
+      if (cachedProjects) {
+        console.log('🗂️ Loading projects from cache');
+        setProjects(cachedProjects);
+        setIsLoading(false);
+        
+        // Check if cache is stale and trigger background refresh
+        const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECTS);
+        if (isStale) {
+          console.log('📡 Projects cache is stale, refreshing in background');
+          // Don't await this - let it run in background
+          loadProjects(true);
+        }
+        return;
+      }
+    }
     
     try {
       setIsLoading(true);
       setError(null);
+      console.log('🔄 Fetching projects from API...');
       
       // Use the new lightweight API endpoint
       const fetchedProjects = await projectService.getProjects(true);
       setProjects(fetchedProjects);
+      
+      // Cache the results
+      cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
+      console.log('💾 Projects cached in localStorage');
     } catch (err: any) {
       // Fallback to old API if new one fails
       try {
         const fetchedProjects = await projectsService.getProjects();
         setProjects(fetchedProjects);
+        
+        // Cache the fallback results too
+        cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
+        console.log('💾 Projects (fallback) cached in localStorage');
       } catch (fallbackErr: any) {
         setError(fallbackErr.message || 'Failed to load projects');
       }
@@ -74,7 +105,9 @@ export function useProjects(): UseProjectsReturn {
 
   // Refresh projects (public method)
   const refreshProjects = useCallback(async () => {
-    await loadProjects();
+    console.log('🔄 Force refreshing projects...');
+    cache.remove(CACHE_KEYS.PROJECTS);
+    await loadProjects(true);
   }, [loadProjects]);
 
   // Create new project
@@ -82,8 +115,13 @@ export function useProjects(): UseProjectsReturn {
     try {
       const newProject = await projectsService.createProject(data);
       
-      // Add to local state
-      setProjects(prev => [...prev, newProject]);
+      // Update local state
+      const updatedProjects = [...projects, newProject];
+      setProjects(updatedProjects);
+      
+      // Update cache
+      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      console.log('✅ Project created and cache updated:', newProject.name);
       
       return newProject;
     } catch (err: any) {
@@ -91,7 +129,7 @@ export function useProjects(): UseProjectsReturn {
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, []);
+  }, [projects]);
 
   // Update project
   const updateProject = useCallback(async (
@@ -102,11 +140,14 @@ export function useProjects(): UseProjectsReturn {
       const updatedProject = await projectsService.updateProject(projectId, data);
       
       // Update in local state
-      setProjects(prev => 
-        prev.map(project => 
-          project.project_id === projectId ? updatedProject : project
-        )
+      const updatedProjects = projects.map(project => 
+        project.project_id === projectId ? updatedProject : project
       );
+      setProjects(updatedProjects);
+      
+      // Update cache
+      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      console.log('✅ Project updated and cache updated:', updatedProject.name);
       
       return updatedProject;
     } catch (err: any) {
@@ -114,7 +155,7 @@ export function useProjects(): UseProjectsReturn {
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, []);
+  }, [projects]);
 
   // Delete project
   const deleteProject = useCallback(async (projectId: string) => {
@@ -122,15 +163,18 @@ export function useProjects(): UseProjectsReturn {
       await projectsService.deleteProject(projectId);
       
       // Remove from local state
-      setProjects(prev => 
-        prev.filter(project => project.project_id !== projectId)
-      );
+      const updatedProjects = projects.filter(project => project.project_id !== projectId);
+      setProjects(updatedProjects);
+      
+      // Update cache
+      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      console.log('✅ Project deleted and cache updated');
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to delete project';
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, []);
+  }, [projects]);
 
   return {
     projects,

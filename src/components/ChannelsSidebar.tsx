@@ -25,14 +25,16 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
   const { toast } = useToast();
   
   // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
+  // Also skip if selectedProjectId is a fake loading ID
   // Pass a special value 'skip' to indicate we don't want to fetch
+  const shouldSkipFetch = preFetchedChannels || selectedProjectId === 'loading';
   const { 
     channels: fetchedChannels, 
     isLoading, 
     error, 
     createChannel, 
     refreshChannels 
-  } = useChannels(preFetchedChannels ? 'skip' as any : selectedProjectId);
+  } = useChannels(shouldSkipFetch ? 'skip' as any : selectedProjectId);
   
   // Use pre-fetched channels if available
   const projectChannels = preFetchedChannels || fetchedChannels;

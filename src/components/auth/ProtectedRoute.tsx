@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { shouldShowLoadingScreen } from '@/lib/settings';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -59,7 +60,7 @@ export default function ProtectedRoute({
   }
 
   // Show loading only if we have a token but still checking its validity
-  if (isLoading && requireAuth) {
+  if (isLoading && requireAuth && shouldShowLoadingScreen()) {
     return <LoadingScreen />;
   }
 

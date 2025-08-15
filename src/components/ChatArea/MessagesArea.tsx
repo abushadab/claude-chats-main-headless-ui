@@ -59,11 +59,12 @@ export function MessagesArea({
   setLightboxImage,
   setShowAgentPicker,
 }: MessagesAreaProps) {
+  
   return (
     <div className="flex-1 overflow-y-auto px-2 py-4">
       <div className="space-y-1">
         {filteredMessages.length === 0 && !isLoadingMessages ? (
-          // Empty State with Motivational Quote - only show when not loading
+          // Empty State with Motivational Quote - only show when we're sure channel is empty
           <div className="flex-1 flex items-center justify-center h-full min-h-[400px]">
             <div className="text-center max-w-2xl mx-auto px-6">
               <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">

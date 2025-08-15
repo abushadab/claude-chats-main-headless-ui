@@ -59,7 +59,13 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   
   const { toast } = useToast();
   
+  // Keep track of previous messages and channel to avoid showing quotes during transitions
+  const [previousMessages, setPreviousMessages] = useState<Message[]>([]);
+  const [previousChannelId, setPreviousChannelId] = useState<string>('');
+  const [isChannelChanging, setIsChannelChanging] = useState(false);
+  
   // Use real messages API
+  // Skip if selectedChannelId is a fake loading ID
   const { 
     messages, 
     isLoading: isLoadingMessages, 
@@ -67,10 +73,34 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     sendMessage: sendMessageAPI, 
     editMessage: editMessageAPI, 
     deleteMessage: deleteMessageAPI 
-  } = useMessages(selectedChannelId);
+  } = useMessages(selectedChannelId === 'loading' ? undefined : selectedChannelId);
+  
+  // Track channel changes
+  useEffect(() => {
+    if (selectedChannelId && selectedChannelId !== previousChannelId) {
+      setIsChannelChanging(true);
+      // Don't clear previous messages immediately - keep them for smooth transition
+      setPreviousChannelId(selectedChannelId);
+    }
+  }, [selectedChannelId, previousChannelId]);
+  
+  // Update previous messages and clear changing state
+  useEffect(() => {
+    
+    // Only update previous messages after we've successfully loaded new ones
+    if (messages.length > 0 && selectedChannelId === previousChannelId && !isLoadingMessages) {
+      setPreviousMessages(messages);
+      setIsChannelChanging(false);
+    } else if (messages.length === 0 && !isLoadingMessages && selectedChannelId === previousChannelId) {
+      // Channel is truly empty (not loading)
+      setPreviousMessages([]);
+      setIsChannelChanging(false);
+    }
+  }, [messages, selectedChannelId, previousChannelId, isLoadingMessages]);
   
   // Fetch channels only for the current project (more efficient)
-  const { channels } = useChannels(selectedProjectId);
+  // Skip if selectedProjectId is a fake loading ID
+  const { channels } = useChannels(selectedProjectId === 'loading' ? 'skip' as any : selectedProjectId);
 
   // Use the message actions hook
   const {
@@ -127,8 +157,10 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     owner_name: ''
   };
   
-  // Messages are already filtered by channel in the useMessages hook
-  const filteredMessages = messages;
+  // Use current messages or previous messages to avoid showing empty state
+  // But only use previous messages if we're in the same channel
+  const filteredMessages = messages.length > 0 ? messages : 
+                           (selectedChannelId === previousChannelId ? previousMessages : messages);
 
   // Get a consistent random quote for this channel
   const getRandomQuote = (channelId: string) => {
@@ -318,7 +350,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           filteredMessages={filteredMessages}
           channel={channel}
           selectedChannelId={selectedChannelId}
-          isLoadingMessages={isLoadingMessages}
+          isLoadingMessages={isLoadingMessages || isChannelChanging}
           pinnedMessageIds={pinnedMessageIds}
           editedMessages={editedMessages}
           deletingMessages={deletingMessages}

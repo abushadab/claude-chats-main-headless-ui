@@ -19,6 +19,8 @@ interface CacheEntry {
   age: number;
   isStale: boolean;
   hasData: boolean;
+  category: 'cache' | 'navigation' | 'workspace' | 'other';
+  value?: string;
 }
 
 interface CacheDebuggerProps {
@@ -42,19 +44,69 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
       
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
+        const data = localStorage.getItem(key);
+        let category: CacheEntry['category'] = 'other';
+        let cacheKey = key;
+        let age = 0;
+        let isStale = false;
+        
+        // Categorize the entries
         if (key.startsWith('claude_chat_')) {
-          const data = localStorage.getItem(key);
-          const age = cache.getAge(key.replace('claude_chat_', '')) || 0;
-          const isStale = cache.isStale(key.replace('claude_chat_', ''), 60000); // 1 minute threshold
-          
-          entries.push({
-            key: key.replace('claude_chat_', ''),
-            size: data?.length || 0,
-            age,
-            isStale,
-            hasData: !!data,
-          });
+          category = 'cache';
+          cacheKey = key.replace('claude_chat_', '');
+          age = cache.getAge(cacheKey) || 0;
+          isStale = cache.isStale(cacheKey, 60000); // 1 minute threshold
+        } else if (key.startsWith('last_') || key.includes('last_channel_')) {
+          category = 'navigation';
+          // For navigation entries, calculate age from timestamp if available
+          try {
+            const parsed = JSON.parse(data || '{}');
+            if (parsed.timestamp) {
+              age = Date.now() - parsed.timestamp;
+              isStale = age > 300000; // 5 minutes for navigation data
+            }
+          } catch {
+            // If not JSON, assume it's a simple string value
+            age = 0;
+          }
+        } else if (key.startsWith('workspace_') || key.startsWith('channels_') || key.startsWith('projects')) {
+          category = 'workspace';
+          // Try to get age from cache if available
+          try {
+            const parsed = JSON.parse(data || '{}');
+            if (parsed.timestamp) {
+              age = Date.now() - parsed.timestamp;
+              isStale = age > 300000; // 5 minutes for workspace data
+            }
+          } catch {
+            age = 0;
+          }
         }
+        
+        // Get a preview of the value
+        let value = data;
+        if (data && data.length > 100) {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed && typeof parsed === 'object') {
+              value = JSON.stringify(parsed, null, 2).substring(0, 100) + '...';
+            } else {
+              value = data.substring(0, 100) + '...';
+            }
+          } catch {
+            value = data.substring(0, 100) + '...';
+          }
+        }
+        
+        entries.push({
+          key: cacheKey,
+          size: data?.length || 0,
+          age,
+          isStale,
+          hasData: !!data,
+          category,
+          value
+        });
       });
     } catch (error) {
       console.warn('Failed to read cache entries:', error);
@@ -91,7 +143,16 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
   };
 
   const clearSpecificCache = (key: string) => {
-    cache.remove(key);
+    try {
+      // Remove from cache if it's a cache entry
+      cache.remove(key);
+      // Also try to remove directly from localStorage
+      localStorage.removeItem(key);
+      // Try with claude_chat_ prefix if original key didn't work
+      localStorage.removeItem(`claude_chat_${key}`);
+    } catch (error) {
+      console.warn('Failed to clear cache entry:', key, error);
+    }
     refreshStats();
   };
 
@@ -119,8 +180,26 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex gap-2 text-sm">
+            <Badge variant={cache.isEnabled() ? 'default' : 'destructive'}>
+              {cache.isEnabled() ? 'Global ON' : 'Global OFF'}
+            </Badge>
+            <Badge variant={cache.isProjectsCacheEnabled() ? 'default' : 'destructive'}>
+              {cache.isProjectsCacheEnabled() ? 'Projects ON' : 'Projects OFF'}
+            </Badge>
+            <Badge variant={cache.isChannelsCacheEnabled() ? 'default' : 'destructive'}>
+              {cache.isChannelsCacheEnabled() ? 'Channels ON' : 'Channels OFF'}
+            </Badge>
+            <Badge variant={cache.isWorkspaceCacheEnabled() ? 'default' : 'destructive'}>
+              {cache.isWorkspaceCacheEnabled() ? 'Workspace ON' : 'Workspace OFF'}
+            </Badge>
             <Badge variant="secondary">
-              {cacheEntries.length} cached
+              {cacheEntries.filter(e => e.category === 'navigation').length} nav
+            </Badge>
+            <Badge variant="secondary">
+              {cacheEntries.filter(e => e.category === 'workspace').length} workspace
+            </Badge>
+            <Badge variant="secondary">
+              {cacheEntries.filter(e => e.category === 'cache').length} cache
             </Badge>
             <Badge variant="secondary">
               {queryClientState.queryCount} queries
@@ -148,27 +227,83 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
         </div>
 
         {/* Cache Entries */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          {/* Navigation Data */}
           <div>
-            <h4 className="text-sm font-medium mb-2">localStorage Cache</h4>
+            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Navigation ({cacheEntries.filter(e => e.category === 'navigation').length})
+            </h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {cacheEntries.map((entry) => {
+              {cacheEntries.filter(e => e.category === 'navigation').map((entry) => (
+                <div
+                  key={entry.key}
+                  className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <div className="font-mono truncate">{entry.key}</div>
+                      <Badge variant="secondary" className="text-xs py-0 bg-blue-100 dark:bg-blue-900">NAV</Badge>
+                    </div>
+                    <div className="flex gap-2 text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatAge(entry.age)}
+                      </span>
+                      <span>{formatSize(entry.size)}</span>
+                      {entry.isStale && (
+                        <Badge variant="outline" className="text-xs py-0">
+                          <AlertCircle className="h-2 w-2 mr-1" />
+                          Stale
+                        </Badge>
+                      )}
+                    </div>
+                    {entry.value && (
+                      <div className="text-xs text-muted-foreground mt-1 font-mono truncate">
+                        {entry.value}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => clearSpecificCache(entry.key)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 ml-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Workspace Data */}
+          <div>
+            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Workspace ({cacheEntries.filter(e => e.category === 'workspace').length})
+            </h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {cacheEntries.filter(e => e.category === 'workspace').map((entry) => {
                 const isChannelCache = entry.key.startsWith('channels_');
                 const isProjectCache = entry.key.startsWith('projects');
                 
                 return (
                   <div
                     key={entry.key}
-                    className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs"
+                    className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950/30 rounded text-xs"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
                         <div className="font-mono truncate">{entry.key}</div>
                         {isChannelCache && (
-                          <Badge variant="secondary" className="text-xs py-0">CH</Badge>
+                          <Badge variant="secondary" className="text-xs py-0 bg-green-100 dark:bg-green-900">CH</Badge>
                         )}
                         {isProjectCache && (
-                          <Badge variant="secondary" className="text-xs py-0">PR</Badge>
+                          <Badge variant="secondary" className="text-xs py-0 bg-green-100 dark:bg-green-900">PR</Badge>
+                        )}
+                        {entry.key.startsWith('workspace_') && (
+                          <Badge variant="secondary" className="text-xs py-0 bg-green-100 dark:bg-green-900">WS</Badge>
                         )}
                       </div>
                       <div className="flex gap-2 text-muted-foreground">
@@ -198,24 +333,92 @@ export function CacheDebugger({ inline = false }: CacheDebuggerProps) {
               })}
             </div>
           </div>
-
+          
+          {/* Cache & Other Data */}
           <div>
-            <h4 className="text-sm font-medium mb-2">React Query Cache</h4>
+            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Cache & Other ({cacheEntries.filter(e => e.category === 'cache' || e.category === 'other').length})
+            </h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {queryClientState.queries?.map((query: any, index: number) => (
-                <div key={index} className="p-2 bg-muted/30 rounded text-xs">
-                  <div className="font-mono truncate mb-1">
-                    {JSON.stringify(query.queryKey)}
+              {cacheEntries.filter(e => e.category === 'cache' || e.category === 'other').map((entry) => (
+                <div
+                  key={entry.key}
+                  className={`flex items-center justify-between p-2 rounded text-xs ${
+                    entry.category === 'cache' 
+                      ? 'bg-purple-50 dark:bg-purple-950/30' 
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <div className="font-mono truncate">{entry.key}</div>
+                      <Badge variant="secondary" className={`text-xs py-0 ${
+                        entry.category === 'cache' 
+                          ? 'bg-purple-100 dark:bg-purple-900' 
+                          : 'bg-gray-100 dark:bg-gray-800'
+                      }`}>
+                        {entry.category === 'cache' ? 'CACHE' : 'OTHER'}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2 text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatAge(entry.age)}
+                      </span>
+                      <span>{formatSize(entry.size)}</span>
+                      {entry.isStale && (
+                        <Badge variant="outline" className="text-xs py-0">
+                          <AlertCircle className="h-2 w-2 mr-1" />
+                          Stale
+                        </Badge>
+                      )}
+                    </div>
+                    {entry.value && (
+                      <div className="text-xs text-muted-foreground mt-1 font-mono truncate">
+                        {entry.value}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex gap-2 text-muted-foreground">
-                    <Badge variant={query.state === 'success' ? 'default' : 'secondary'} className="text-xs py-0">
-                      {query.state}
-                    </Badge>
-                    {query.isStale && <span>stale</span>}
-                    {query.isFetching && <span>fetching</span>}
-                  </div>
+                  <Button
+                    onClick={() => clearSpecificCache(entry.key)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 ml-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
+            </div>
+          </div>
+
+        </div>
+        
+        {/* React Query Cache */}
+        <div className="mt-6">
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            React Query Cache ({queryClientState.queries?.length || 0})
+          </h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 xl:col-span-3">
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {queryClientState.queries?.map((query: any, index: number) => (
+                  <div key={index} className="p-2 bg-muted/30 rounded text-xs">
+                    <div className="font-mono truncate mb-1">
+                      {JSON.stringify(query.queryKey)}
+                    </div>
+                    <div className="flex gap-2 text-muted-foreground">
+                      <Badge variant={query.state === 'success' ? 'default' : 'secondary'} className="text-xs py-0">
+                        {query.state}
+                      </Badge>
+                      {query.isStale && <span>stale</span>}
+                      {query.isFetching && <span>fetching</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

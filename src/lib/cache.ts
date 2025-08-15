@@ -11,6 +11,142 @@ interface CacheItem<T> {
 
 class CacheManager {
   private prefix = 'claude_chat_';
+  private enabledKey = 'cache_enabled';
+  private projectsCacheKey = 'projects_cache_enabled';
+  private channelsCacheKey = 'channels_cache_enabled';
+  private workspaceCacheKey = 'workspace_cache_enabled';
+
+  /**
+   * Check if caching is globally enabled (backwards compatibility)
+   */
+  isEnabled(): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
+    try {
+      const enabled = localStorage.getItem(this.enabledKey);
+      // Default to DISABLED for testing
+      return enabled === 'true';
+    } catch {
+      return false; // Default to disabled
+    }
+  }
+
+  /**
+   * Check if projects caching is enabled
+   */
+  isProjectsCacheEnabled(): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
+    try {
+      const enabled = localStorage.getItem(this.projectsCacheKey);
+      // Default to following global cache setting
+      return enabled !== null ? enabled === 'true' : this.isEnabled();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if channels caching is enabled
+   */
+  isChannelsCacheEnabled(): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
+    try {
+      const enabled = localStorage.getItem(this.channelsCacheKey);
+      // Default to following global cache setting
+      return enabled !== null ? enabled === 'true' : this.isEnabled();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if workspace caching is enabled
+   */
+  isWorkspaceCacheEnabled(): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
+    try {
+      const enabled = localStorage.getItem(this.workspaceCacheKey);
+      // Default to following global cache setting
+      return enabled !== null ? enabled === 'true' : this.isEnabled();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Enable or disable caching globally
+   */
+  setEnabled(enabled: boolean): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      localStorage.setItem(this.enabledKey, enabled.toString());
+      
+      // If disabling cache, clear all cached data
+      if (!enabled) {
+        this.clear();
+      }
+    } catch (error) {
+      console.warn('Failed to set cache enabled state:', error);
+    }
+  }
+
+  /**
+   * Enable or disable projects caching
+   */
+  setProjectsCacheEnabled(enabled: boolean): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      localStorage.setItem(this.projectsCacheKey, enabled.toString());
+      
+      // If disabling, clear projects cache
+      if (!enabled) {
+        this.clearProjectsCache();
+      }
+    } catch (error) {
+      console.warn('Failed to set projects cache enabled state:', error);
+    }
+  }
+
+  /**
+   * Enable or disable channels caching
+   */
+  setChannelsCacheEnabled(enabled: boolean): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      localStorage.setItem(this.channelsCacheKey, enabled.toString());
+      
+      // If disabling, clear channels cache
+      if (!enabled) {
+        this.clearChannelsCache();
+      }
+    } catch (error) {
+      console.warn('Failed to set channels cache enabled state:', error);
+    }
+  }
+
+  /**
+   * Enable or disable workspace caching
+   */
+  setWorkspaceCacheEnabled(enabled: boolean): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      localStorage.setItem(this.workspaceCacheKey, enabled.toString());
+      
+      // If disabling, clear workspace cache
+      if (!enabled) {
+        this.clearWorkspaceCache();
+      }
+    } catch (error) {
+      console.warn('Failed to set workspace cache enabled state:', error);
+    }
+  }
 
   /**
    * Check if localStorage is available
@@ -26,8 +162,14 @@ class CacheManager {
   /**
    * Set item in cache with optional TTL
    */
-  set<T>(key: string, data: T, ttlMs?: number): boolean {
-    if (!this.isLocalStorageAvailable()) return false;
+  set<T>(key: string, data: T, ttlMs?: number, cacheType?: 'projects' | 'channels' | 'workspace'): boolean {
+    // Check specific cache type or fall back to global cache setting
+    let cacheEnabled = this.isEnabled();
+    if (cacheType === 'projects') cacheEnabled = this.isProjectsCacheEnabled();
+    else if (cacheType === 'channels') cacheEnabled = this.isChannelsCacheEnabled();
+    else if (cacheType === 'workspace') cacheEnabled = this.isWorkspaceCacheEnabled();
+    
+    if (!this.isLocalStorageAvailable() || !cacheEnabled) return false;
     
     try {
       const cacheKey = `${this.prefix}${key}`;
@@ -48,8 +190,14 @@ class CacheManager {
   /**
    * Get item from cache, returns null if expired or not found
    */
-  get<T>(key: string): T | null {
-    if (!this.isLocalStorageAvailable()) return null;
+  get<T>(key: string, cacheType?: 'projects' | 'channels' | 'workspace'): T | null {
+    // Check specific cache type or fall back to global cache setting
+    let cacheEnabled = this.isEnabled();
+    if (cacheType === 'projects') cacheEnabled = this.isProjectsCacheEnabled();
+    else if (cacheType === 'channels') cacheEnabled = this.isChannelsCacheEnabled();
+    else if (cacheType === 'workspace') cacheEnabled = this.isWorkspaceCacheEnabled();
+    
+    if (!this.isLocalStorageAvailable() || !cacheEnabled) return null;
     
     try {
       const cacheKey = `${this.prefix}${key}`;
@@ -76,8 +224,8 @@ class CacheManager {
   /**
    * Check if cache item exists and is not expired
    */
-  has(key: string): boolean {
-    return this.get(key) !== null;
+  has(key: string, cacheType?: 'projects' | 'channels' | 'workspace'): boolean {
+    return this.get(key, cacheType) !== null;
   }
 
   /**
@@ -122,6 +270,60 @@ class CacheManager {
   }
 
   /**
+   * Clear projects cache specifically
+   */
+  clearProjectsCache(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith(this.prefix + 'projects') || key.includes('projects')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to clear projects cache:', error);
+    }
+  }
+
+  /**
+   * Clear channels cache specifically
+   */
+  clearChannelsCache(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith(this.prefix + 'channels') || key.includes('channels')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to clear channels cache:', error);
+    }
+  }
+
+  /**
+   * Clear workspace cache specifically
+   */
+  clearWorkspaceCache(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('workspace_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to clear workspace cache:', error);
+    }
+  }
+
+  /**
    * Clear all cache items with our prefix
    */
   clear(): void {
@@ -136,6 +338,29 @@ class CacheManager {
       });
     } catch (error) {
       console.warn('Failed to clear cache:', error);
+    }
+  }
+
+  /**
+   * Clear ALL cache data including workspace, navigation, and other data
+   */
+  clearAll(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        // Clear all cache-related data
+        if (key.startsWith(this.prefix) || 
+            key.startsWith('workspace_') ||
+            key.startsWith('last_') ||
+            key.includes('last_channel_') ||
+            key === 'cache_enabled') {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to clear all cache:', error);
     }
   }
 

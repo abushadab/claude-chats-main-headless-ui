@@ -46,7 +46,7 @@ export function useMessages(channelId?: string): UseMessagesReturn {
       setHasMore(response.hasMore || false);
     } catch (err: any) {
       setError(err.message || 'Failed to load messages');
-      console.error('Error loading messages:', err);
+      console.error('[useMessages] Error loading messages:', err);
     } finally {
       setIsLoading(false);
     }
@@ -137,19 +137,18 @@ export function useMessages(channelId?: string): UseMessagesReturn {
   // Load messages when channel changes
   useEffect(() => {
     if (channelId !== currentChannelId) {
+      setIsLoading(true); // Set loading BEFORE clearing to prevent quotes
       setCurrentChannelId(channelId);
-      setMessages([]); // Clear messages when switching channels
+      setMessages([]); // Now safe to clear since isLoading is true
       setError(null);
       setHasMore(true);
+      
+      // Load messages immediately for the new channel
+      if (channelId) {
+        loadMessages(channelId);
+      }
     }
-  }, [channelId, currentChannelId]);
-
-  // Initial load when channel is available
-  useEffect(() => {
-    if (currentChannelId && messages.length === 0) {
-      loadMessages(currentChannelId);
-    }
-  }, [currentChannelId, loadMessages, messages.length]);
+  }, [channelId, currentChannelId, loadMessages]);
 
   return {
     messages,

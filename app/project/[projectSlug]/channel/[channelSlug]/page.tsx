@@ -11,6 +11,7 @@ import { workspaceService, type WorkspaceResponse } from "@/services/workspace.s
 import { notFound, useRouter } from "next/navigation"
 import type { Project } from "@/types/project.types"
 import { LoadingScreen } from "@/components/LoadingScreen"
+import { shouldShowLoadingScreen } from "@/lib/settings"
 import { Bell } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/headless-button"
@@ -30,109 +31,230 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
   
-  // Check localStorage for cached workspace data
-  const getCachedWorkspace = () => {
+  const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [previousWorkspaceData, setPreviousWorkspaceData] = useState<WorkspaceResponse | null>(() => {
+    // Only use cached workspace data that matches the current project/channel
     const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
         const parsed = JSON.parse(cached);
-        // Check if cache is less than 5 minutes old
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
-          console.log('📦 Using cached workspace data');
+        if (parsed.data) {
           return parsed.data;
         }
-      } catch (e) {
-        console.error('Error parsing cached workspace data:', e);
       }
+    } catch (e) {
+      // Error parsing cached data for this specific project/channel
     }
     return null;
-  };
-  
-  const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(getCachedWorkspace())
-  const [loading, setLoading] = useState(!getCachedWorkspace())
+  })
 
-  // Save last visited project/channel to localStorage
+  // Save last visited project/channel to localStorage (only if caching is enabled)
   useEffect(() => {
-    if (projectSlug && channelSlug) {
-      localStorage.setItem('last_visited_project', projectSlug);
-      localStorage.setItem('last_visited_channel', channelSlug);
-      localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
+    if (projectSlug && channelSlug && workspaceData?.project) {
+      // Import cache here to avoid SSR issues
+      import('@/lib/cache').then(({ cache }) => {
+        if (cache.isWorkspaceCacheEnabled()) {
+          localStorage.setItem('last_visited_project', projectSlug);
+          localStorage.setItem('last_visited_channel', channelSlug);
+          localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
+          
+          // Save last visited channel for this specific project
+          localStorage.setItem(`last_channel_${workspaceData.project.project_id}`, channelSlug);
+        }
+      });
     }
-  }, [projectSlug, channelSlug]);
+  }, [projectSlug, channelSlug, workspaceData]);
 
   // Fetch complete workspace data in one API call
   useEffect(() => {
-    const fetchWorkspaceData = async () => {
-      try {
-        setLoading(true)
-        console.log('Fetching workspace data for:', projectSlug, channelSlug);
+    // First check if caching is enabled and for cached data
+    const checkCacheAndFetch = async () => {
+      const { cache } = await import('@/lib/cache');
+      
+      if (cache.isWorkspaceCacheEnabled()) {
+        const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
+        const cached = localStorage.getItem(cacheKey);
         
-        // Wait a bit to ensure auth is ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Single API call gets everything: project, channels, messages, members, etc.
-        const data = await workspaceService.getWorkspace(projectSlug, channelSlug);
-        console.log('Workspace data received:', data);
-        
-        // Cache the workspace data
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            // Check if cache is less than 5 minutes old
+            if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+              // Using cached workspace data
+              setWorkspaceData(parsed.data);
+              setLoading(false);
+              // Don't clear previous data - keep it for smooth transitions
+              return; // Don't fetch from API
+            }
+          } catch (e) {
+            // Error parsing cached workspace data
+          }
+        }
+      }
+      
+      // If caching is disabled or no cache found, proceed with API call
+      fetchWorkspaceData();
+    };
+    
+    checkCacheAndFetch();
+  }, [projectSlug, channelSlug]);
+  
+  const fetchWorkspaceData = async () => {
+    try {
+      // Save current data before loading new data
+      if (workspaceData) {
+        setPreviousWorkspaceData(workspaceData);
+      }
+      
+      setLoading(true)
+      // Fetching workspace data
+      
+      // Wait a bit to ensure auth is ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Single API call gets everything: project, channels, messages, members, etc.
+      const data = await workspaceService.getWorkspace(projectSlug, channelSlug);
+      // Workspace data received
+      
+      // Cache the workspace data only if workspace caching is enabled
+      const { cache } = await import('@/lib/cache');
+      if (cache.isWorkspaceCacheEnabled()) {
         const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
         localStorage.setItem(cacheKey, JSON.stringify({
           data,
           timestamp: Date.now()
         }));
-        console.log('💾 Workspace data cached');
+        // Workspace data cached
+      }
+      
+      // Handle smart fallback from backend
+      if (data.fallback_used) {
+        // Channel fallback used
+        // Update URL to reflect the actual channel being shown
+        router.replace(`/project/${projectSlug}/channel/${data.current_channel.slug}`, { scroll: false });
+      }
+      
+      setWorkspaceData(data);
+      // Keep previous data for next transition
+      setPreviousWorkspaceData(data);
+    } catch (error) {
+      // Error fetching workspace data
+      notFound()
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  // Use either current workspace data or previous data while loading
+  const displayData = workspaceData || previousWorkspaceData;
+  
+  // Show loading screen only on the very first app load (and when caching is disabled)
+  if (!displayData) {
+    // Check if loading screen is enabled in settings
+    if (!shouldShowLoadingScreen()) {
+      // If loading screen is disabled, continue to show the page components without data
+      // Let the components handle their own empty states
+    } else {
+    
+      // Import cache dynamically to avoid SSR issues
+      const getCachedData = async () => {
+        const { cache } = await import('@/lib/cache');
         
-        // Handle smart fallback from backend
-        if (data.fallback_used) {
-          console.log('Channel fallback used:', data.fallback_reason);
-          // Update URL to reflect the actual channel being shown
-          router.replace(`/project/${projectSlug}/channel/${data.current_channel.slug}`, { scroll: false });
+        if (!cache.isWorkspaceCacheEnabled()) {
+          // If workspace caching is disabled, always show loading screen
+          return null;
         }
         
-        setWorkspaceData(data);
-      } catch (error) {
-        console.error('Error fetching workspace data:', error)
-        notFound()
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchWorkspaceData()
-  }, [projectSlug, channelSlug, router])
-
-  // Show loading screen only on initial app load (when we don't have any cached data)
-  if (loading && !workspaceData) {
-    // Check if we have cached projects - if yes, we shouldn't show loading
-    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
-    if (!hasCachedProjects) {
-      // First time load - show loading screen with quotes
+        const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
+        
+        // Check if we have cached workspace data for current project/channel
+        const currentCacheKey = `workspace_${projectSlug}_${channelSlug}`;
+        let fallbackData = null;
+        try {
+          const cached = localStorage.getItem(currentCacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.data) {
+              fallbackData = parsed.data;
+            }
+          }
+        } catch (e) {
+          // Error parsing cached data for current project/channel
+        }
+        
+        if (fallbackData) {
+          // Use cached workspace data for current project/channel to show UI immediately
+          setPreviousWorkspaceData(fallbackData);
+        } else if (!hasCachedProjects) {
+          // Only show loading screen on the very first load ever
+          return 'show_loading';
+        }
+        
+        return 'continue';
+      };
+      
+      // Use the cached data check
+      getCachedData().then(result => {
+        if (result === 'show_loading') {
+          // We'll handle this in the component
+        }
+      });
+      
+      // Show loading screen
       return (
         <ProtectedRoute>
           <LoadingScreen />
         </ProtectedRoute>
-      )
+      );
     }
-    // We have cached data but workspace is still loading - just wait without showing skeleton
-    // The UI will update when data arrives
-  }
-  
-  // If we don't have workspace data yet, return null
-  if (!workspaceData) {
-    return null;
   }
 
-  // Backend now guarantees all fields are present
+  // Create default data structure when no displayData but we want to show UI
+  const defaultData = {
+    project: { 
+      project_id: 'loading', 
+      name: 'Loading...', 
+      slug: projectSlug,
+      color: '#6b7280'
+    },
+    channels: [],
+    current_channel: {
+      channel_id: 'loading',
+      name: channelSlug,
+      slug: channelSlug,
+      description: 'Loading...',
+      type: 'text' as const,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    active_members: [],
+    stats: { members_online: 0, total_channels: 0, unread_total: 0 }
+  };
+
+  // Use displayData if available, otherwise use defaults when loading screen is disabled
+  const dataToUse = displayData || (!shouldShowLoadingScreen() ? defaultData : null);
+  
+  // If we have no data and loading screen is enabled, show loading screen
+  if (!dataToUse) {
+    return (
+      <ProtectedRoute>
+        <LoadingScreen />
+      </ProtectedRoute>
+    );
+  }
+
+  // Backend now guarantees all fields are present (or we provide defaults)
   const { 
     project, 
     channels = [], 
     active_members = [], // eslint-disable-line @typescript-eslint/no-unused-vars 
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
-  } = workspaceData;
+  } = dataToUse;
 
   // Find the current channel from channels array
-  let current_channel = workspaceData.current_channel;
+  let current_channel = dataToUse.current_channel;
   
   // If current_channel is null, try to find it from channels array
   if (!current_channel && channels.length > 0) {
@@ -147,13 +269,13 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     // If still not found, use first channel
     if (!current_channel) {
       current_channel = channels[0];
-      console.warn(`Channel ${channelSlug} not found, using first available channel`);
+      // Channel not found, using first available channel
     }
   }
 
   // Safety check for current_channel
   if (!current_channel) {
-    console.error('No channels available in workspace data');
+    // No channels available in workspace data
     return null;
   }
 
@@ -200,11 +322,11 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (notificationId: string) => {
-    console.log('Mark notification as read:', notificationId);
+    // Mark notification as read
   };
 
   const markAllAsRead = () => {
-    console.log('Mark all notifications as read');
+    // Mark all notifications as read
   };
 
   return (
