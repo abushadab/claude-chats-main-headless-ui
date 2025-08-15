@@ -155,7 +155,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
             </div>
             
             <div className="space-y-1 px-2">
-              {isLoading && channels.length === 0 ? (
+              {isLoading && projectChannels.length === 0 ? (
                 <div className="space-y-2 animate-pulse">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="h-8 bg-muted-foreground/10 rounded-md" />
