@@ -3,7 +3,7 @@
  * Handles the new composite workspace API that gets everything in one call
  */
 
-import axios from 'axios';
+import axios from '@/lib/axios';
 import { config } from '@/config';
 import type { Project, Channel, Message, ActiveMember, User } from '@/types';
 
@@ -13,6 +13,7 @@ export interface WorkspaceResponse {
   current_channel: Channel;
   channels: Channel[];
   messages: Message[];
+  messages_included?: boolean;
   active_members: ActiveMember[];
   typing_users: Array<{
     user_id: string;
@@ -38,6 +39,7 @@ export interface WorkspaceOptions {
   limit?: number;
   before?: string;
   after?: string;
+  include_messages?: boolean;
 }
 
 class WorkspaceService {
@@ -57,6 +59,7 @@ class WorkspaceService {
   ): Promise<WorkspaceResponse> {
     try {
       const params = new URLSearchParams();
+      if (options?.include_messages) params.set('include_messages', 'true');
       if (options?.limit) params.set('limit', options.limit.toString());
       if (options?.before) params.set('before', options.before);
       if (options?.after) params.set('after', options.after);

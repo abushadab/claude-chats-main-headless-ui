@@ -40,23 +40,6 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const workspaceDataRef = useRef<WorkspaceResponse | null>(null)
   workspaceDataRef.current = workspaceData // Keep ref in sync
   const [, setLoading] = useState(true) // Used for loading state management
-  const [previousWorkspaceData, setPreviousWorkspaceData] = useState<WorkspaceResponse | null>(() => {
-    // Only use cached workspace data that matches the current project/channel
-    // Use hardcoded prefix for initial state (can't use async import in useState)
-    const cacheKey = `workspace_${projectSlug}_${channelSlug}`;
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.data) {
-          return parsed.data;
-        }
-      }
-    } catch {
-      // Error parsing cached data for this specific project/channel
-    }
-    return null;
-  })
 
   // Save last visited project/channel to localStorage (only if projects caching is enabled)
   useEffect(() => {
@@ -135,7 +118,6 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
                 setWorkspaceData(parsed.data);
                 setLoading(false);
               }
-              // Don't clear previous data - keep it for smooth transitions
               return; // Don't fetch from API
             }
           } catch {
@@ -147,36 +129,27 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
       // If caching is disabled or no cache found, proceed with API call
       // Define fetchWorkspaceData inline to avoid stale closure
       try {
-        // Check if workspace caching is enabled BEFORE making the API call
-        if (!cache.isWorkspaceCacheEnabled()) {
-          // Workspace caching is disabled - don't call workspace API
-          // Let individual components fetch their own data (projects, channels, messages)
-          if (!isCancelled) {
-            setLoading(false);
-          }
-          return;
-        }
-        
         if (isCancelled) return;
-        
-        // Save current data before loading new data using ref to avoid stale closure
-        if (workspaceDataRef.current && !isCancelled) {
-          setPreviousWorkspaceData(workspaceDataRef.current);
-        }
         
         if (!isCancelled) {
           setLoading(true);
         }
         
         // Single API call gets everything: project, channels, messages, members, etc.
-        const data = await workspaceService.getWorkspace(projectSlug, channelSlug);
+        // Request with messages included for optimal performance
+        const data = await workspaceService.getWorkspace(projectSlug, channelSlug, {
+          include_messages: true,
+          limit: 50
+        });
         
-        // Cache the workspace data since caching is enabled
-        const cacheKey = `${CACHE_KEYS.WORKSPACE_PREFIX}${projectSlug}_${channelSlug}`;
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data,
-          timestamp: Date.now()
-        }));
+        // Cache the workspace data if caching is enabled
+        if (cache.isWorkspaceCacheEnabled()) {
+          const cacheKey = `${CACHE_KEYS.WORKSPACE_PREFIX}${projectSlug}_${channelSlug}`;
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data,
+            timestamp: Date.now()
+          }));
+        }
         
         // Handle smart fallback from backend
         if (data.fallback_used) {
@@ -187,8 +160,6 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         
         if (!isCancelled) {
           setWorkspaceData(data);
-          // Keep previous data for next transition
-          setPreviousWorkspaceData(data);
         }
       } catch {
         if (!isCancelled) {
@@ -209,11 +180,11 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   }, [projectSlug, channelSlug]); // Removed router from dependencies to prevent loops
   
 
-  // Use either current workspace data or previous data while loading
+  // Use current workspace data
   // Use useMemo to prevent recalculation on every render
   const displayData = useMemo(() => {
-    return workspaceData || previousWorkspaceData;
-  }, [workspaceData, previousWorkspaceData]);
+    return workspaceData;
+  }, [workspaceData]);
   
   // Only show loading screen on very first app load (no cached data anywhere)
   // Skip loading screen if we have any cached data for this project/channel
@@ -245,6 +216,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
       color: '#6b7280'
     },
     channels: [],
+    messages: [],
     current_channel: {
       channel_id: '',  // Empty string prevents API calls
       name: channelSlug,
@@ -301,6 +273,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
           fallbackData = {
             project,
             channels: cachedChannels,
+            messages: [], // No cached messages yet
             current_channel: cachedChannels.find(c => c.slug === channelSlug) || null,
             active_members: [],
             stats: { members_online: 0, total_channels: cachedChannels.length, unread_total: 0 }
@@ -320,6 +293,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { 
     project, 
     channels = [], 
+    messages = [],
     active_members = [], // eslint-disable-line @typescript-eslint/no-unused-vars 
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
   } = dataToUse;
@@ -555,6 +529,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               selectedChannelId={current_channel.channel_id}
               initialChannel={current_channel}
               initialProject={project}
+              initialMessages={workspaceData?.messages_included ? messages : undefined}
             />
           </div>
         </div>

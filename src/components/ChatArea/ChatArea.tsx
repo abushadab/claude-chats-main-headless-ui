@@ -32,9 +32,10 @@ interface ChatAreaProps {
   selectedChannelId: string;
   initialChannel?: Channel;
   initialProject?: Project;
+  initialMessages?: Message[];
 }
 
-export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel, initialProject }: ChatAreaProps) {
+export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel, initialProject, initialMessages }: ChatAreaProps) {
   // ALL HOOKS MUST BE CALLED AT THE TOP - NO CONDITIONAL RETURNS BEFORE THIS POINT
   const [newMessage, setNewMessage] = useState('');
   const [showMentionModal, setShowMentionModal] = useState(false);
@@ -61,42 +62,28 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   
   // Keep track of previous messages and channel to avoid showing quotes during transitions
   const [previousMessages, setPreviousMessages] = useState<Message[]>([]);
-  const [previousChannelId, setPreviousChannelId] = useState<string>('');
-  const [isChannelChanging, setIsChannelChanging] = useState(false);
   
   // Use real messages API
-  // Skip if selectedChannelId is a fake loading ID
+  // Skip if selectedChannelId is a fake loading ID or if we have initialMessages from workspace API
+  const shouldFetchMessages = !initialMessages && selectedChannelId !== 'loading' && selectedChannelId !== '';
   const { 
-    messages, 
+    messages: fetchedMessages, 
     isLoading: isLoadingMessages, 
     error: messagesError, 
     sendMessage: sendMessageAPI, 
     editMessage: editMessageAPI, 
     deleteMessage: deleteMessageAPI 
-  } = useMessages(selectedChannelId === 'loading' ? undefined : selectedChannelId);
+  } = useMessages(shouldFetchMessages ? selectedChannelId : undefined);
   
-  // Track channel changes
-  useEffect(() => {
-    if (selectedChannelId && selectedChannelId !== previousChannelId) {
-      setIsChannelChanging(true);
-      // Don't clear previous messages immediately - keep them for smooth transition
-      setPreviousChannelId(selectedChannelId);
-    }
-  }, [selectedChannelId, previousChannelId]);
+  // Use initialMessages from workspace API if available, otherwise use fetched messages
+  const messages = initialMessages || fetchedMessages;
   
-  // Update previous messages and clear changing state
+  // Update previous messages when messages change
   useEffect(() => {
-    
-    // Only update previous messages after we've successfully loaded new ones
-    if (messages.length > 0 && selectedChannelId === previousChannelId && !isLoadingMessages) {
+    if (!isLoadingMessages) {
       setPreviousMessages(messages);
-      setIsChannelChanging(false);
-    } else if (messages.length === 0 && !isLoadingMessages && selectedChannelId === previousChannelId) {
-      // Channel is truly empty (not loading)
-      setPreviousMessages([]);
-      setIsChannelChanging(false);
     }
-  }, [messages, selectedChannelId, previousChannelId, isLoadingMessages]);
+  }, [messages, isLoadingMessages]);
   
   // Fetch channels only for the current project (more efficient)
   // Skip if selectedProjectId is a fake loading ID
@@ -157,10 +144,9 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     owner_name: ''
   };
   
-  // Use current messages or previous messages to avoid showing empty state
-  // But only use previous messages if we're in the same channel
-  const filteredMessages = messages.length > 0 ? messages : 
-                           (selectedChannelId === previousChannelId ? previousMessages : messages);
+  // Use current messages or empty array during channel changes
+  // Don't use previous messages as they cause confusion
+  const filteredMessages = messages;
 
   // Get a consistent random quote for this channel
   const getRandomQuote = (channelId: string) => {
@@ -352,7 +338,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           filteredMessages={filteredMessages}
           channel={channelToUse}
           selectedChannelId={selectedChannelId}
-          isLoadingMessages={isLoadingMessages || isChannelChanging}
+          isLoadingMessages={isLoadingMessages && !initialMessages}
           pinnedMessageIds={pinnedMessageIds}
           editedMessages={editedMessages}
           deletingMessages={deletingMessages}
