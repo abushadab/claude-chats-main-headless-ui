@@ -51,20 +51,17 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     return null;
   })
 
-  // Save last visited project/channel to localStorage (only if respective caching is enabled)
+  // Save last visited project/channel to localStorage (only if projects caching is enabled)
   useEffect(() => {
     if (projectSlug && channelSlug) {
       // Import cache here to avoid SSR issues
       import('@/lib/cache').then(({ cache }) => {
-        // Save project-related last visited info if projects cache is enabled
+        // Save all navigation state when projects cache is enabled
+        // (channel navigation is part of project navigation state)
         if (cache.isProjectsCacheEnabled()) {
           localStorage.setItem('last_visited_project', projectSlug);
-          localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
-        }
-        
-        // Save channel-related last visited info if channels cache is enabled
-        if (cache.isChannelsCacheEnabled()) {
           localStorage.setItem('last_visited_channel', channelSlug);
+          localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
           
           // Save last visited channel for this specific project
           if (workspaceData?.project?.project_id) {
