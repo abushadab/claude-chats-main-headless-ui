@@ -51,22 +51,35 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     return null;
   })
 
-  // Save last visited project/channel to localStorage (only if caching is enabled)
+  // Save last visited project/channel to localStorage (only if respective caching is enabled)
   useEffect(() => {
-    if (projectSlug && channelSlug && workspaceData?.project) {
+    if (projectSlug && channelSlug) {
       // Import cache here to avoid SSR issues
       import('@/lib/cache').then(({ cache }) => {
-        if (cache.isWorkspaceCacheEnabled()) {
+        // Save project-related last visited info if projects cache is enabled
+        if (cache.isProjectsCacheEnabled()) {
           localStorage.setItem('last_visited_project', projectSlug);
-          localStorage.setItem('last_visited_channel', channelSlug);
           localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
+        }
+        
+        // Save channel-related last visited info if channels cache is enabled
+        if (cache.isChannelsCacheEnabled()) {
+          localStorage.setItem('last_visited_channel', channelSlug);
           
           // Save last visited channel for this specific project
-          localStorage.setItem(`last_channel_${workspaceData.project.project_id}`, channelSlug);
+          if (workspaceData?.project?.project_id) {
+            localStorage.setItem(`last_channel_${workspaceData.project.project_id}`, channelSlug);
+          } else if (projects) {
+            // Try to find project from projects list
+            const currentProject = projects.find(p => p.slug === projectSlug);
+            if (currentProject?.project_id) {
+              localStorage.setItem(`last_channel_${currentProject.project_id}`, channelSlug);
+            }
+          }
         }
       });
     }
-  }, [projectSlug, channelSlug, workspaceData]);
+  }, [projectSlug, channelSlug, workspaceData, projects]);
 
   // Handle "default" project redirect - only redirect if coming from home/root
   useEffect(() => {
