@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Hash, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { mockRecentUsers } from "@/data/mockData";
@@ -23,6 +23,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
+  const [previousChannels, setPreviousChannels] = useState<Channel[]>([]);
   
   // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
   // Also skip if selectedProjectId is a fake loading ID
@@ -38,12 +39,22 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
   
   // Use pre-fetched channels if available
   const projectChannels = preFetchedChannels || fetchedChannels;
+  
+  // Update previous channels when we get new data
+  React.useEffect(() => {
+    if (projectChannels.length > 0 && !isLoading) {
+      setPreviousChannels(projectChannels);
+    }
+  }, [projectChannels, isLoading]);
 
   // Get real projects data
   const { projects } = useProjects();
   
+  // Use previous channels while loading new ones to prevent flash
+  const displayChannels = isLoading && projectChannels.length === 0 ? previousChannels : projectChannels;
+  
   // All channels are text channels (no voice channels in current API)
-  const textChannels = projectChannels;
+  const textChannels = displayChannels;
 
   // Find current project from real data
   const project = projects.find(p => p.project_id === selectedProjectId) || {
@@ -157,7 +168,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, channels
             <div className="space-y-1 px-2">
               {textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
-                  No channels found
+                  {isLoading ? "Loading channels..." : "No channels found"}
                 </div>
               ) : (
                 textChannels.map((channel) => (
