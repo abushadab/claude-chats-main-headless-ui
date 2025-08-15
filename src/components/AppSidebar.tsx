@@ -263,25 +263,10 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   return (
     <Sidebar className="w-14">
       <SidebarContent className="bg-sidebar flex flex-col">
-        {/* Fixed Header Section - Always show logo */}
-        <div className="h-14 flex items-center justify-center bg-sidebar flex-shrink-0">
-          <DiscordTooltip content="Hudhud">
-            <div>
-              <Image 
-                src="/hudhud-logo.svg" 
-                alt="Hudhud" 
-                width={40}
-                height={40}
-                className="rounded-[8px] flex-shrink-0 cursor-pointer"
-              />
-            </div>
-          </DiscordTooltip>
-        </div>
-        
-        {/* Scrollable Content */}
-        <SidebarGroup className="flex-1 overflow-y-auto py-2">
-          <SidebarGroupContent className="space-y-1">
-            <SidebarMenu className="space-y-1 !space-y-3">
+        {/* Scrollable Content - No logo header */}
+        <SidebarGroup className="flex-1 overflow-y-auto py-2 pt-3">
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-3">
               {isLoading && projects.length === 0 ? (
                 // Loading skeleton - only show if no cached data
                 Array.from({ length: 5 }).map((_, index) => {
@@ -335,21 +320,20 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
                 );
                 })
               )}
-            </SidebarMenu>
-            
-            {/* Create Project Button */}
-            <div className="mt-2 flex items-center justify-center">
-              <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogTrigger asChild>
-                  <DiscordTooltip content="Create Project">
-                    <Button
-                      variant="ghost"
-                      className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent"
-                    >
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </DiscordTooltip>
-                </DialogTrigger>
+              
+              {/* Create Project Button - Inside SidebarMenu for consistent spacing */}
+              <SidebarMenuItem className="flex items-center justify-center">
+                <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                  <DialogTrigger asChild>
+                    <DiscordTooltip content="Create Project">
+                      <Button
+                        variant="ghost"
+                        className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent"
+                      >
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </DiscordTooltip>
+                  </DialogTrigger>
                 <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>
@@ -467,8 +451,9 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
                   </div>
                   )}
                 </DialogContent>
-              </Dialog>
-            </div>
+                </Dialog>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
         
@@ -476,18 +461,30 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         <UserProfileSection />
         
         {/* Bottom Bar with Settings */}
-        <div className="h-12 bg-sidebar flex items-center flex-shrink-0 px-2 justify-center">
+        <div className="h-12 bg-sidebar flex items-center flex-shrink-0 px-2 justify-center gap-1">
           {isLoading && projects.length === 0 ? (
             <Skeleton className="h-9 w-9 rounded-lg" />
           ) : (
-            <DiscordTooltip content="Settings">
-              <button
-                className="p-2 hover:bg-accent rounded-lg transition-colors"
-                onClick={() => router.push('/settings')}
-              >
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </button>
-            </DiscordTooltip>
+            <>
+              <DiscordTooltip content="Test Loading Screen">
+                <button
+                  className="p-2 hover:bg-accent rounded-lg transition-colors"
+                  onClick={() => router.push('/test-loading')}
+                >
+                  <div className="h-5 w-5 text-muted-foreground flex items-center justify-center text-xs font-bold">
+                    L
+                  </div>
+                </button>
+              </DiscordTooltip>
+              <DiscordTooltip content="Settings">
+                <button
+                  className="p-2 hover:bg-accent rounded-lg transition-colors"
+                  onClick={() => router.push('/settings')}
+                >
+                  <Settings className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </DiscordTooltip>
+            </>
           )}
         </div>
       </SidebarContent>

@@ -24,7 +24,6 @@ import { ChatHeader } from "./components/ChatHeader";
 import { EmptyChannelState } from "./components/EmptyChannelState";
 import { useMessageActions } from "./hooks/useMessageActions";
 import { mockUsers, availableAgents, mockEmojis, motivationalQuotes, sharedImages, sharedFiles } from "./mockData";
-import { MessageListSkeleton } from "@/components/ui/skeleton-components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Hash } from "lucide-react";
 
@@ -161,7 +160,13 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
         
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden">
-          <MessageListSkeleton count={6} />
+          <div className="space-y-4 p-4 animate-pulse">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                <div className={`${i % 2 === 0 ? 'w-[60%]' : 'w-[50%]'} h-20 bg-muted rounded-lg`} />
+              </div>
+            ))}
+          </div>
         </div>
         
         {/* Message Input */}

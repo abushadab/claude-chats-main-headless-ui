@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthLoadingSkeleton } from '@/components/ui/skeleton-components';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -60,7 +60,7 @@ export default function ProtectedRoute({
 
   // Show loading only if we have a token but still checking its validity
   if (isLoading && requireAuth) {
-    return <AuthLoadingSkeleton />;
+    return <LoadingScreen />;
   }
 
   // Don't render protected content if not authenticated

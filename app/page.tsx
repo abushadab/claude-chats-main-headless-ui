@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useProjects } from "@/hooks/useProjects"
 import { useAuth } from "@/contexts/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
-import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
+import { LoadingScreen } from "@/components/LoadingScreen"
 
 export default function HomePage() {
   const router = useRouter()
@@ -27,7 +27,7 @@ export default function HomePage() {
 
   return (
     <ProtectedRoute>
-      <AuthLoadingSkeleton />
+      <LoadingScreen />
     </ProtectedRoute>
   )
 }

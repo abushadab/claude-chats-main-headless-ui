@@ -11,12 +11,13 @@ import { workspaceService, type WorkspaceResponse } from "@/services/workspace.s
 import { notFound, useRouter } from "next/navigation"
 import type { Project, ActiveMember } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
-import { AuthLoadingSkeleton } from "@/components/ui/skeleton-components"
+import { LoadingScreen } from "@/components/LoadingScreen"
 import { Bell } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/headless-button"
 import { ScrollArea } from "@/components/ui/headless-scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar"
+import Image from "next/image"
 
 interface PageProps {
   params: Promise<{
@@ -102,69 +103,20 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     fetchWorkspaceData()
   }, [projectSlug, channelSlug, router])
 
-  // Show loading while fetching data - but use cached data if available
+  // Show loading screen only on initial app load (when we don't have any cached data)
   if (loading && !workspaceData) {
-    // Try to determine which project/channel index based on slug
-    // First check localStorage for cached projects to get actual order
-    let activeProjectIndex = 0;
-    let activeChannelIndex = 0;
-    
-    try {
-      const cachedProjects = localStorage.getItem('claude_chat_projects_light');
-      if (cachedProjects) {
-        const projects = JSON.parse(cachedProjects).data;
-        if (projects && Array.isArray(projects)) {
-          // Find the index based on slug
-          const index = projects.findIndex((p: any) => p.slug === projectSlug);
-          if (index !== -1) {
-            activeProjectIndex = index;
-          }
-        }
-      }
-      
-      // For channels, check cached channels for this project
-      const projectChannels = localStorage.getItem(`claude_chat_channels_${projectSlug}`);
-      if (projectChannels) {
-        const channels = JSON.parse(projectChannels).data;
-        if (channels && Array.isArray(channels)) {
-          const index = channels.findIndex((c: any) => c.slug === channelSlug || c.name.toLowerCase().replace(/\s+/g, '-') === channelSlug);
-          if (index !== -1) {
-            activeChannelIndex = index;
-          }
-        }
-      }
-    } catch (e) {
-      // Fallback to simple mapping if localStorage fails
-      const projectIndexMap: Record<string, number> = {
-        'default': 0,
-        'default-workspace': 0,
-        'wisdom-network': 1,
-        'mobile-app': 2,
-        'launchdb': 3,
-        'web-platform': 4,
-      };
-      
-      const channelIndexMap: Record<string, number> = {
-        'announcements': 0,
-        'general': 1,
-        'random': 2,
-        'development': 3,
-        'support': 4,
-        'global': 0,
-      };
-      
-      activeProjectIndex = projectIndexMap[projectSlug] ?? 0;
-      activeChannelIndex = channelIndexMap[channelSlug] ?? 0;
+    // Check if we have cached projects - if yes, we shouldn't show loading
+    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
+    if (!hasCachedProjects) {
+      // First time load - show loading screen with quotes
+      return (
+        <ProtectedRoute>
+          <LoadingScreen />
+        </ProtectedRoute>
+      )
     }
-    
-    return (
-      <ProtectedRoute>
-        <AuthLoadingSkeleton 
-          activeProjectIndex={activeProjectIndex} 
-          activeChannelIndex={activeChannelIndex} 
-        />
-      </ProtectedRoute>
-    )
+    // We have cached data but workspace is still loading - just wait without showing skeleton
+    // The UI will update when data arrives
   }
   
   // If we don't have workspace data yet, return null
@@ -257,21 +209,23 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   };
 
   return (
-    <div className="h-screen flex w-full bg-background overflow-hidden">
-      {/* Main sidebar with projects */}
-      <AppSidebar 
-        selectedProjectId={project.project_id}
-        isLoading={false}
-      />
-      
-      {/* Main content area with fixed width */}
-      <div className="flex flex-col h-full w-[calc(100vw-56px)]">
-        <header className="h-14 flex items-center justify-between border-b border-border bg-background px-4 flex-shrink-0">
-          {/* Empty left side */}
-          <div />
-          
-          {/* Right side - Online indicator and Notification bell */}
-          <div className="flex items-center gap-4">
+    <div className="h-screen flex flex-col w-full bg-background overflow-hidden">
+      {/* Full-width topbar */}
+      <header className="h-14 flex items-center justify-between border-b border-border bg-background px-3 flex-shrink-0">
+        {/* Left side - Logo */}
+        <div className="flex items-center gap-3">
+          <Image 
+            src="/hudhud-logo.svg" 
+            alt="Hudhud" 
+            width={32}
+            height={32}
+            className="rounded-[6px] flex-shrink-0"
+          />
+          <span className="font-semibold text-lg">Hudhud</span>
+        </div>
+        
+        {/* Right side - Online indicator and Notification bell */}
+        <div className="flex items-center gap-4">
             {/* Active members indicator */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -377,24 +331,33 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
           </div>
         </header>
         
+        {/* Main content area below topbar */}
         <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
-          {/* Channels sidebar with workspace data */}
-          <ChannelsSidebar
+          {/* Main sidebar with projects */}
+          <AppSidebar 
             selectedProjectId={project.project_id}
-            selectedChannelId={current_channel.channel_id}
-            channels={channels}
+            isLoading={false}
           />
           
-          {/* Chat area with workspace data */}
-          <ChatArea
-            selectedProjectId={project.project_id}
-            selectedChannelId={current_channel.channel_id}
-            initialChannel={current_channel}
-            initialProject={project}
-          />
+          {/* Right side content */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Channels sidebar with workspace data */}
+            <ChannelsSidebar
+              selectedProjectId={project.project_id}
+              selectedChannelId={current_channel.channel_id}
+              channels={channels}
+            />
+            
+            {/* Chat area with workspace data */}
+            <ChatArea
+              selectedProjectId={project.project_id}
+              selectedChannelId={current_channel.channel_id}
+              initialChannel={current_channel}
+              initialProject={project}
+            />
+          </div>
         </div>
       </div>
-    </div>
   )
 }
 
