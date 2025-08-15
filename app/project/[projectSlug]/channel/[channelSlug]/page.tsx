@@ -494,7 +494,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
             <ChannelsSidebar
               selectedProjectId={project.project_id}
               selectedChannelId={current_channel.channel_id}
-              channels={channels}
+              channels={workspaceData ? channels : undefined}
             />
             
             {/* Chat area with workspace data */}
