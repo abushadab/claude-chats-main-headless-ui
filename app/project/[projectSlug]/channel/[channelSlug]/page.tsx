@@ -367,15 +367,20 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const hasCachedData = useMemo(() => {
     if (typeof window === 'undefined') return false;
     
-    // Check for cached projects
-    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
-    if (!hasCachedProjects) return false;
+    // We need BOTH projects and channels to show a meaningful UI
+    // OR we need workspace cache which has everything
     
-    // Check if we have workspace cache for this specific page
+    // Check for workspace cache first (has everything we need)
     const workspaceCacheKey = `workspace_${projectSlug}_${channelSlug}`;
     const hasWorkspaceCache = localStorage.getItem(workspaceCacheKey);
+    if (hasWorkspaceCache) return true;
     
-    return true; // We have at least projects cache, enough to show UI
+    // Check for projects cache
+    const hasCachedProjects = localStorage.getItem('claude_chat_projects_light');
+    
+    // Without projects, we can't show the UI properly
+    // The dataToUse logic needs projects to build the display
+    return !!hasCachedProjects;
   }, [projectSlug, channelSlug]);
   
   // Now we can safely return early if needed
