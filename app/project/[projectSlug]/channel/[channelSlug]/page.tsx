@@ -223,8 +223,8 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   // Use displayData if available, otherwise try to build from cached data
   let dataToUse = displayData;
   
-  if (!dataToUse && !shouldShowLoadingScreen()) {
-    // Try to build workspace data from cached projects and channels
+  if (!dataToUse) {
+    // Always try to build workspace data from cached projects and channels
     try {
       if (typeof window !== 'undefined') {
         // Import cache synchronously on client side
@@ -266,13 +266,17 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     }
   }
   
-  // If we have no data and loading screen is enabled, show loading screen
+  // If we have no data, decide what to show based on loading screen setting
   if (!dataToUse) {
-    return (
-      <ProtectedRoute>
-        <LoadingScreen />
-      </ProtectedRoute>
-    );
+    if (shouldShowLoadingScreen()) {
+      return (
+        <ProtectedRoute>
+          <LoadingScreen />
+        </ProtectedRoute>
+      );
+    }
+    // Loading screen disabled - use default data to show UI structure
+    dataToUse = defaultData;
   }
 
   // Backend now guarantees all fields are present (or we provide defaults)
