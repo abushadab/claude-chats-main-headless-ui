@@ -24,9 +24,11 @@ export function useProjects(lightweight = true) {
       console.log('🔄 Fetching projects from API...');
       const data = await projectService.getProjects(lightweight);
       
-      // Cache in localStorage with TTL
-      cache.set(cacheKey, data, CACHE_TTL.PROJECTS, 'projects');
-      console.log('💾 Projects cached in localStorage');
+      // Only cache if projects caching is enabled
+      if (cache.isProjectsCacheEnabled()) {
+        cache.set(cacheKey, data, CACHE_TTL.PROJECTS, 'projects');
+        console.log('💾 Projects cached in localStorage');
+      }
       
       return data;
     },

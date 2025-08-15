@@ -64,18 +64,22 @@ export function useProjects(): UseProjectsReturn {
       const fetchedProjects = await projectService.getProjects(true);
       setProjects(fetchedProjects);
       
-      // Cache the results
-      cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
-      console.log('💾 Projects cached in localStorage');
+      // Only cache if projects caching is enabled
+      if (cache.isProjectsCacheEnabled()) {
+        cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
+        console.log('💾 Projects cached in localStorage');
+      }
     } catch (err: any) {
       // Fallback to old API if new one fails
       try {
         const fetchedProjects = await projectsService.getProjects();
         setProjects(fetchedProjects);
         
-        // Cache the fallback results too
-        cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
-        console.log('💾 Projects (fallback) cached in localStorage');
+        // Only cache if projects caching is enabled
+        if (cache.isProjectsCacheEnabled()) {
+          cache.set(cacheKey, fetchedProjects, CACHE_TTL.PROJECTS, 'projects');
+          console.log('💾 Projects (fallback) cached in localStorage');
+        }
       } catch (fallbackErr: any) {
         setError(fallbackErr.message || 'Failed to load projects');
       }
@@ -119,8 +123,10 @@ export function useProjects(): UseProjectsReturn {
       const updatedProjects = [...projects, newProject];
       setProjects(updatedProjects);
       
-      // Update cache
-      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      // Update cache if enabled
+      if (cache.isProjectsCacheEnabled()) {
+        cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      }
       console.log('✅ Project created and cache updated:', newProject.name);
       
       return newProject;
@@ -145,8 +151,10 @@ export function useProjects(): UseProjectsReturn {
       );
       setProjects(updatedProjects);
       
-      // Update cache
-      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      // Update cache if enabled
+      if (cache.isProjectsCacheEnabled()) {
+        cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      }
       console.log('✅ Project updated and cache updated:', updatedProject.name);
       
       return updatedProject;
@@ -166,8 +174,10 @@ export function useProjects(): UseProjectsReturn {
       const updatedProjects = projects.filter(project => project.project_id !== projectId);
       setProjects(updatedProjects);
       
-      // Update cache
-      cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      // Update cache if enabled
+      if (cache.isProjectsCacheEnabled()) {
+        cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
+      }
       console.log('✅ Project deleted and cache updated');
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to delete project';

@@ -51,9 +51,11 @@ export function useChannels(projectId?: string): UseChannelsReturn {
       console.log('🔄 Fetching channels from API...', projectId ? `for project: ${projectId}` : '(all)');
       const data = await chatService.getChannels(projectId);
       
-      // Cache in localStorage with TTL
-      cache.set(cacheKey, data, CACHE_TTL.CHANNELS, 'channels');
-      console.log('💾 Channels cached in localStorage');
+      // Only cache if channels caching is enabled
+      if (cache.isChannelsCacheEnabled()) {
+        cache.set(cacheKey, data, CACHE_TTL.CHANNELS, 'channels');
+        console.log('💾 Channels cached in localStorage');
+      }
       
       return data;
     },
@@ -129,9 +131,11 @@ export function useChannels(projectId?: string): UseChannelsReturn {
         return oldData ? [...oldData, newChannel] : [newChannel];
       });
       
-      // 2. Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey, 'channels') || [];
-      cache.set(cacheKey, [...cachedData, newChannel], CACHE_TTL.CHANNELS, 'channels');
+      // 2. Update localStorage cache if enabled
+      if (cache.isChannelsCacheEnabled()) {
+        const cachedData = cache.get<Channel[]>(cacheKey, 'channels') || [];
+        cache.set(cacheKey, [...cachedData, newChannel], CACHE_TTL.CHANNELS, 'channels');
+      }
       
       // 3. Invalidate "all channels" cache if it exists
       queryClient.invalidateQueries({ queryKey: ['channels', undefined] });
@@ -171,13 +175,15 @@ export function useChannels(projectId?: string): UseChannelsReturn {
         );
       });
       
-      // Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey);
-      if (cachedData) {
-        const updatedData = cachedData.map(channel => 
-          channel.channel_id === channelId ? updatedChannel : channel
-        );
-        cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+      // Update localStorage cache if enabled
+      if (cache.isChannelsCacheEnabled()) {
+        const cachedData = cache.get<Channel[]>(cacheKey);
+        if (cachedData) {
+          const updatedData = cachedData.map(channel => 
+            channel.channel_id === channelId ? updatedChannel : channel
+          );
+          cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+        }
       }
       
       return updatedChannel;
@@ -201,11 +207,13 @@ export function useChannels(projectId?: string): UseChannelsReturn {
         return oldData.filter(channel => channel.channel_id !== channelId);
       });
       
-      // 2. Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey);
-      if (cachedData) {
-        const updatedData = cachedData.filter(channel => channel.channel_id !== channelId);
-        cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+      // 2. Update localStorage cache if enabled
+      if (cache.isChannelsCacheEnabled()) {
+        const cachedData = cache.get<Channel[]>(cacheKey);
+        if (cachedData) {
+          const updatedData = cachedData.filter(channel => channel.channel_id !== channelId);
+          cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+        }
       }
       
       // 3. Invalidate "all channels" cache
@@ -228,7 +236,9 @@ export function useChannels(projectId?: string): UseChannelsReturn {
             if (otherCached?.some(ch => ch.channel_id === channelId)) {
               // This channel exists in another project's cache, remove it
               const filtered = otherCached.filter(ch => ch.channel_id !== channelId);
-              cache.set(otherCacheKey, filtered, CACHE_TTL.CHANNELS);
+              if (cache.isChannelsCacheEnabled()) {
+                cache.set(otherCacheKey, filtered, CACHE_TTL.CHANNELS);
+              }
               queryClient.invalidateQueries({ queryKey: ['channels', project.project_id] });
             }
           }
@@ -262,15 +272,17 @@ export function useChannels(projectId?: string): UseChannelsReturn {
         );
       });
       
-      // Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey);
-      if (cachedData) {
-        const updatedData = cachedData.map(channel => 
-          channel.channel_id === channelId 
-            ? { ...channel, is_member: true }
-            : channel
-        );
-        cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+      // Update localStorage cache if enabled
+      if (cache.isChannelsCacheEnabled()) {
+        const cachedData = cache.get<Channel[]>(cacheKey);
+        if (cachedData) {
+          const updatedData = cachedData.map(channel => 
+            channel.channel_id === channelId 
+              ? { ...channel, is_member: true }
+              : channel
+          );
+          cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+        }
       }
     } catch (err: any) {
       queryClient.invalidateQueries({ queryKey: ['channels', projectId] });
@@ -295,15 +307,17 @@ export function useChannels(projectId?: string): UseChannelsReturn {
         );
       });
       
-      // Update localStorage cache
-      const cachedData = cache.get<Channel[]>(cacheKey);
-      if (cachedData) {
-        const updatedData = cachedData.map(channel => 
-          channel.channel_id === channelId 
-            ? { ...channel, is_member: false }
-            : channel
-        );
-        cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+      // Update localStorage cache if enabled
+      if (cache.isChannelsCacheEnabled()) {
+        const cachedData = cache.get<Channel[]>(cacheKey);
+        if (cachedData) {
+          const updatedData = cachedData.map(channel => 
+            channel.channel_id === channelId 
+              ? { ...channel, is_member: false }
+              : channel
+          );
+          cache.set(cacheKey, updatedData, CACHE_TTL.CHANNELS);
+        }
       }
     } catch (err: any) {
       queryClient.invalidateQueries({ queryKey: ['channels', projectId] });
