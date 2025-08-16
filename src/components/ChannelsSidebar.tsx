@@ -26,17 +26,59 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const { toast } = useToast();
   const [previousChannels, setPreviousChannels] = useState<Channel[]>([]);
   
+  // Track project changes to determine when to show skeleton
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
   // REMOVED useChannels hook - we only use channels from workspace API now
   // This eliminates redundant API calls since workspace API already provides channels
   
   // Always use pre-fetched channels from workspace API
   const projectChannels = preFetchedChannels || [];
-  const isLoading = false; // No longer loading channels separately
   const error = null; // No channel-specific errors
+  
+  // Determine if we should show skeleton
+  const isProjectChanging = currentProjectId !== null && currentProjectId !== selectedProjectId;
+  const shouldShowSkeleton = isInitialLoad || isProjectChanging || projectChannels.length === 0;
+  
+  console.log('🔍 [ChannelsSidebar] Skeleton Logic:', {
+    selectedProjectId,
+    currentProjectId,
+    isInitialLoad,
+    isProjectChanging,
+    preFetchedChannelsCount: preFetchedChannels?.length || 0,
+    projectChannelsCount: projectChannels.length,
+    shouldShowSkeleton,
+    timestamp: new Date().toISOString().split('T')[1]
+  });
+  
+  // Track project changes and initial load
+  React.useEffect(() => {
+    console.log('📊 [ChannelsSidebar] Project Change Effect:', {
+      selectedProjectId,
+      currentProjectId,
+      changing: selectedProjectId !== currentProjectId,
+      timestamp: new Date().toISOString().split('T')[1]
+    });
+    
+    if (selectedProjectId && selectedProjectId !== currentProjectId) {
+      console.log('🔄 [ChannelsSidebar] Project changing from', currentProjectId, 'to', selectedProjectId);
+      setCurrentProjectId(selectedProjectId);
+      setIsInitialLoad(false);
+    } else if (currentProjectId === null && selectedProjectId) {
+      console.log('🎯 [ChannelsSidebar] Initial load for project:', selectedProjectId);
+      setCurrentProjectId(selectedProjectId);
+      setIsInitialLoad(false);
+    }
+  }, [selectedProjectId, currentProjectId]);
   
   // Update previous channels when we get new data (even if empty)
   React.useEffect(() => {
-    // Always update previous channels since we're not loading separately anymore
+    console.log('📦 [ChannelsSidebar] Channels Update Effect:', {
+      projectChannelsCount: projectChannels.length,
+      previousChannelsCount: previousChannels.length,
+      timestamp: new Date().toISOString().split('T')[1]
+    });
     setPreviousChannels(projectChannels);
   }, [projectChannels]);
 
@@ -163,7 +205,31 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1 px-2">
-              {textChannels.length === 0 ? (
+              {shouldShowSkeleton ? (
+                // Skeleton loading state - mix Hash and Lock icons for variety
+                <>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-28 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="w-full h-8 px-2 flex items-center space-x-2">
+                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <div className="h-4 w-16 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                </>
+              ) : textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
                   No channels found
                 </div>
@@ -212,24 +278,65 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1">
-              {mockRecentUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center px-2 py-1.5 rounded"
-                >
-                  <div className="relative mr-2">
-                    <div className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center ${
-                      user.type === 'ai-agent' && user.subType === 'claude' 
-                        ? 'bg-orange-100 text-orange-700' 
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {user.avatar}
+              {shouldShowSkeleton ? (
+                // Skeleton loading state for users
+                <>
+                  <div className="flex items-center px-2 py-1.5">
+                    <div className="relative mr-2">
+                      <div className="w-6 h-6 rounded bg-muted-foreground/20 animate-pulse" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground/10 animate-pulse" />
                     </div>
-                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(user.status)}`} />
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
-                  <span className="text-sm text-muted-foreground">{user.name}</span>
-                </div>
-              ))}
+                  <div className="flex items-center px-2 py-1.5">
+                    <div className="relative mr-2">
+                      <div className="w-6 h-6 rounded bg-muted-foreground/20 animate-pulse" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground/10 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="flex items-center px-2 py-1.5">
+                    <div className="relative mr-2">
+                      <div className="w-6 h-6 rounded bg-muted-foreground/20 animate-pulse" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground/10 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-16 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="flex items-center px-2 py-1.5">
+                    <div className="relative mr-2">
+                      <div className="w-6 h-6 rounded bg-muted-foreground/20 animate-pulse" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground/10 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-28 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                  <div className="flex items-center px-2 py-1.5">
+                    <div className="relative mr-2">
+                      <div className="w-6 h-6 rounded bg-muted-foreground/20 animate-pulse" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground/10 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                  </div>
+                </>
+              ) : (
+                mockRecentUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center px-2 py-1.5 rounded"
+                  >
+                    <div className="relative mr-2">
+                      <div className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center ${
+                        user.type === 'ai-agent' && user.subType === 'claude' 
+                          ? 'bg-orange-100 text-orange-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {user.avatar}
+                      </div>
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(user.status)}`} />
+                    </div>
+                    <span className="text-sm text-muted-foreground">{user.name}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
