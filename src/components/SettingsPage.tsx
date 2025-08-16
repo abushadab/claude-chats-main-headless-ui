@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { Bell, Moon, Monitor, Sun, Shield, Database } from "lucide-react";
+import { Bell, Moon, Monitor, Sun, Shield, Database, Code } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { CacheDebugger } from "@/components/CacheDebugger";
-import { cache } from "@/lib/cache";
+import { Button } from "@/components/ui/button";
 import { getAppSettings } from "@/lib/settings";
+import { useRouter } from "next/navigation";
 
 export function SettingsPage() {
-  const [showCacheSettings, setShowCacheSettings] = useState(false);
+  const router = useRouter();
+  const [showDevToolsLink, setShowDevToolsLink] = useState(false);
   const [settings, setSettings] = useState({
     // Notifications
     desktopNotifications: true,
@@ -22,14 +23,6 @@ export function SettingsPage() {
     
     // Privacy
     showOnlineStatus: true,
-    
-    // Development
-    showCacheDebugger: process.env.NODE_ENV === 'development',
-    cacheEnabled: false, // Default to disabled
-    projectsCacheEnabled: false, // Default to disabled
-    channelsCacheEnabled: false, // Default to disabled
-    membersCacheEnabled: false, // Default to disabled
-    workspaceCacheEnabled: false, // Default to disabled
   });
 
   // Load settings from localStorage on mount
@@ -39,18 +32,13 @@ export function SettingsPage() {
         const appSettings = getAppSettings();
         setSettings(prev => ({
           ...prev,
-          cacheEnabled: cache.isEnabled(),
-          projectsCacheEnabled: cache.isProjectsCacheEnabled(),
-          channelsCacheEnabled: cache.isChannelsCacheEnabled(),
-          membersCacheEnabled: cache.isMembersCacheEnabled(),
-          workspaceCacheEnabled: cache.isWorkspaceCacheEnabled(),
           showLoadingScreen: appSettings.showLoadingScreen
         }));
         
-        // Check if cache settings should be shown
-        const shouldShowCache = process.env.NODE_ENV === 'development' || 
-                               localStorage.getItem('show_cache_settings') === 'true';
-        setShowCacheSettings(shouldShowCache);
+        // Check if dev tools link should be shown
+        const shouldShowDevTools = process.env.NODE_ENV === 'development' || 
+                                  localStorage.getItem('show_dev_tools') === 'true';
+        setShowDevToolsLink(shouldShowDevTools);
       } catch (error) {
         console.warn('Failed to load settings:', error);
       }
@@ -62,19 +50,6 @@ export function SettingsPage() {
   const handleSettingChange = (key: string, value: boolean | string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     
-    // Handle cache enabled/disabled
-    if (key === 'cacheEnabled' && typeof value === 'boolean') {
-      cache.setEnabled(value);
-      
-      // Refresh the page to apply changes immediately
-      if (!value) {
-        // Small delay to show the change, then refresh
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
-      }
-    }
-    
     // Handle loading screen setting
     if (key === 'showLoadingScreen' && typeof value === 'boolean') {
       try {
@@ -82,23 +57,6 @@ export function SettingsPage() {
       } catch (error) {
         console.warn('Failed to save loading screen setting:', error);
       }
-    }
-    
-    // Handle individual cache settings
-    if (key === 'projectsCacheEnabled' && typeof value === 'boolean') {
-      cache.setProjectsCacheEnabled(value);
-    }
-    
-    if (key === 'channelsCacheEnabled' && typeof value === 'boolean') {
-      cache.setChannelsCacheEnabled(value);
-    }
-    
-    if (key === 'membersCacheEnabled' && typeof value === 'boolean') {
-      cache.setMembersCacheEnabled(value);
-    }
-    
-    if (key === 'workspaceCacheEnabled' && typeof value === 'boolean') {
-      cache.setWorkspaceCacheEnabled(value);
     }
   };
 
@@ -224,75 +182,30 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Cache Settings - show in development or when explicitly enabled */}
-        {showCacheSettings && (
+        {/* Developer Tools Link - show in development or when enabled */}
+        {showDevToolsLink && (
           <div className="space-y-3">
             <h3 className="flex items-center text-lg font-medium text-foreground">
-              <Database className="h-5 w-5 text-primary mr-2" />
-              Development Tools
+              <Code className="h-5 w-5 text-primary mr-2" />
+              Developer
             </h3>
-            <div className="pl-7 space-y-1 border-l-2 border-border">
-              <SettingItem
-                label="Enable Caching"
-                description="Cache API responses for faster navigation and offline capability"
-                checked={settings.cacheEnabled}
-                onChange={(checked) => handleSettingChange('cacheEnabled', checked)}
-              />
-              
-              <div className="pl-4 space-y-1 border-l-2 border-muted-foreground/20">
-                <SettingItem
-                  label="Projects Caching"
-                  description="Cache projects list and metadata"
-                  checked={settings.projectsCacheEnabled}
-                  onChange={(checked) => handleSettingChange('projectsCacheEnabled', checked)}
-                />
-                
-                <SettingItem
-                  label="Channels Caching"
-                  description="Cache channel lists for each project"
-                  checked={settings.channelsCacheEnabled}
-                  onChange={(checked) => handleSettingChange('channelsCacheEnabled', checked)}
-                />
-                
-                <SettingItem
-                  label="Members Caching"
-                  description="Cache project members for each project"
-                  checked={settings.membersCacheEnabled}
-                  onChange={(checked) => handleSettingChange('membersCacheEnabled', checked)}
-                />
-                
-                <SettingItem
-                  label="Workspace Caching"
-                  description="Cache complete workspace data (projects + channels + messages)"
-                  checked={settings.workspaceCacheEnabled}
-                  onChange={(checked) => handleSettingChange('workspaceCacheEnabled', checked)}
-                />
-              </div>
-              
-              <SettingItem
-                label="Show Cache Debugger"
-                description="Display cache monitoring tools for development"
-                checked={settings.showCacheDebugger}
-                onChange={(checked) => handleSettingChange('showCacheDebugger', checked)}
-              />
+            <div className="pl-7 border-l-2 border-border">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => router.push('/dev-tools')}
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Open Developer Tools
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Access cache management, debugging tools, and advanced settings
+              </p>
             </div>
           </div>
         )}
 
       </div>
-
-      {/* Cache Debugger - conditionally rendered */}
-      {showCacheSettings && settings.showCacheDebugger && (
-        <div className="bg-background border border-border rounded-lg p-6">
-          <h3 className="flex items-center text-lg font-medium text-foreground mb-4">
-            <Database className="h-5 w-5 text-primary mr-2" />
-            Cache Monitor
-          </h3>
-          <div className="relative">
-            <CacheDebugger inline={true} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
