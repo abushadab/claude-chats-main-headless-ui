@@ -121,6 +121,16 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               if (!isCancelled) {
                 setWorkspaceData(parsed.data);
                 setLoading(false);
+                
+                // Also ensure channels are cached separately for useChannels hook
+                if (cache.isChannelsCacheEnabled() && parsed.data.channels && parsed.data.project?.project_id) {
+                  const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${parsed.data.project.project_id}`;
+                  // Check if channels cache already exists
+                  if (!cache.has(channelsCacheKey, 'channels')) {
+                    cache.set(channelsCacheKey, parsed.data.channels, 5 * 60 * 1000, 'channels');
+                    console.log('💾 Cached channels from workspace cache for project:', parsed.data.project.project_id);
+                  }
+                }
               }
               return; // Don't fetch from API
             }
@@ -153,6 +163,14 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
             data,
             timestamp: Date.now()
           }));
+        }
+        
+        // ALSO cache channels separately if channels caching is enabled
+        // This allows useChannels hook to use the cached data without calling channels API
+        if (cache.isChannelsCacheEnabled() && data.channels && data.project?.project_id) {
+          const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${data.project.project_id}`;
+          cache.set(channelsCacheKey, data.channels, 5 * 60 * 1000, 'channels'); // 5 min TTL
+          console.log('💾 Cached channels from workspace API for project:', data.project.project_id);
         }
         
         // Handle smart fallback from backend
