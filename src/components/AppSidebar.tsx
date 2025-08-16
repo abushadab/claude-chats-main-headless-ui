@@ -203,7 +203,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         setIsCreating(false);
         toast({
           title: "Error",
-          description: "Failed to create project. Please try again.",
+          description: error.message || "Failed to create project. Please try again.",
           variant: "destructive",
         });
       }
@@ -222,12 +222,14 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
     const colorMap: Record<string, string> = {
       '#3b82f6': 'bg-blue-500',
       '#8b5cf6': 'bg-purple-500',
-      '#10b981': 'bg-green-500',
+      '#10b981': 'bg-emerald-500',
       '#f97316': 'bg-orange-500',
       '#ec4899': 'bg-pink-500',
       '#ef4444': 'bg-red-500',
-      '#eab308': 'bg-yellow-500',
+      '#f59e0b': 'bg-amber-500',
       '#6366f1': 'bg-indigo-500',
+      '#06b6d4': 'bg-cyan-500',
+      '#84cc16': 'bg-lime-500',
     };
     
     return colorMap[color] || 'bg-gray-500';

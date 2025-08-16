@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { projectsService } from '@/services/projects.service';
 import { projectService } from '@/services/project.service';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ export function useProjects(): UseProjectsReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   // Load projects from API (using lightweight version for performance)
   const loadProjects = useCallback(async (forceRefresh = false) => {
@@ -135,13 +137,16 @@ export function useProjects(): UseProjectsReturn {
         cache.remove(channelsCacheKey);
       }
       
+      // Invalidate React Query cache to update other components using useProjects
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      
       return newProject;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to create project';
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, [projects]);
+  }, [projects, queryClient]);
 
   // Update project
   const updateProject = useCallback(async (
@@ -161,7 +166,9 @@ export function useProjects(): UseProjectsReturn {
       if (cache.isProjectsCacheEnabled()) {
         cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
       }
-      console.log('✅ Project updated and cache updated:', updatedProject.name);
+      
+      // Invalidate React Query cache
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
       
       return updatedProject;
     } catch (err: any) {
@@ -169,7 +176,7 @@ export function useProjects(): UseProjectsReturn {
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, [projects]);
+  }, [projects, queryClient]);
 
   // Delete project
   const deleteProject = useCallback(async (projectId: string) => {
@@ -184,13 +191,15 @@ export function useProjects(): UseProjectsReturn {
       if (cache.isProjectsCacheEnabled()) {
         cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
       }
-      console.log('✅ Project deleted and cache updated');
+      
+      // Invalidate React Query cache
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to delete project';
       setError(errorMsg);
       throw new Error(errorMsg);
     }
-  }, [projects]);
+  }, [projects, queryClient]);
 
   return {
     projects,

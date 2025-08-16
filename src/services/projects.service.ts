@@ -103,7 +103,7 @@ class ProjectsService {
       
       throw new Error(response.data?.error?.message || 'Failed to create project');
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || error.message || 'Failed to create project');
+      throw new Error(error.response?.data?.error?.message || error.message || 'Failed to create project');
     }
   }
 
