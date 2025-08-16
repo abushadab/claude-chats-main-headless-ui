@@ -42,7 +42,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   // Determine if we should show skeleton - separate for channels and members
   const isProjectChanging = currentProjectId !== null && currentProjectId !== selectedProjectId;
   const shouldShowChannelsSkeleton = isInitialLoad || isProjectChanging || projectChannels.length === 0;
-  const shouldShowMembersSkeleton = isLoadingMembers || (!projectMembers && isInitialLoad);
+  // Show members skeleton when: loading, initial load without data, or project is changing
+  const shouldShowMembersSkeleton = isLoadingMembers === true || (!projectMembers && (isInitialLoad || isProjectChanging));
   
   console.log('🔍 [ChannelsSidebar] Skeleton Logic:', {
     selectedProjectId,
