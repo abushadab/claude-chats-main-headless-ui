@@ -549,6 +549,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               selectedChannelId={current_channel.channel_id}
               selectedChannelSlug={channelSlug}
               channels={channels}
+              activeMembers={active_members}
             />
             
             {/* Chat area with workspace data */}

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Hash, Lock, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { mockRecentUsers } from "@/data/mockData";
 import { useProjects } from "@/hooks/useProjects";
 import { projectsService } from "@/services/projects.service";
 import type { Channel } from "@/types/chat.types";
@@ -13,14 +12,27 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { CreateChannelModal } from "@/components/ChatArea/modals/CreateChannelModal";
 import { useToast } from "@/hooks/use-toast";
 
+interface Member {
+  user_id: string;
+  username: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  status: string;
+  last_seen: string;
+  role: string;
+  joined_at: string;
+}
+
 interface ChannelsSidebarProps {
   selectedProjectId: string;
   selectedChannelId: string;
   selectedChannelSlug?: string; // Channel slug from URL for matching
   channels?: Channel[]; // Pre-fetched channels from parent
+  activeMembers?: Member[]; // Pre-fetched active members from workspace API
 }
 
-export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selectedChannelSlug, channels: preFetchedChannels }: ChannelsSidebarProps) {
+export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selectedChannelSlug, channels: preFetchedChannels, activeMembers }: ChannelsSidebarProps) {
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
@@ -121,6 +133,16 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     }
   };
 
+  // Generate avatar initials from full_name, fallback to username
+  const getAvatarInitials = (member: Member): string => {
+    const name = member.full_name || member.username || '';
+    const words = name.trim().split(' ');
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   // Handle channel creation - returns true on success, false on failure
   const handleChannelCreated = async (channelData: { 
     name: string; 
@@ -206,14 +228,14 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             
             <div className="space-y-1 px-2">
               {shouldShowSkeleton ? (
-                // Skeleton loading state - mix Hash and Lock icons for variety
+                // Skeleton loading state - using Hash icons only
                 <>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
                     <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
                     <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
                     <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
@@ -225,7 +247,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                     <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
                     <div className="h-4 w-16 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                 </>
@@ -273,7 +295,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
           <div>
             <div className="flex items-center justify-between mb-2 px-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Recent Active Users
+                Members
               </h3>
             </div>
             
@@ -317,25 +339,25 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                     <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                 </>
-              ) : (
-                mockRecentUsers.map((user) => (
+              ) : activeMembers && activeMembers.length > 0 ? (
+                activeMembers.map((member) => (
                   <div
-                    key={user.id}
+                    key={member.user_id}
                     className="flex items-center px-2 py-1.5 rounded"
                   >
                     <div className="relative mr-2">
-                      <div className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center ${
-                        user.type === 'ai-agent' && user.subType === 'claude' 
-                          ? 'bg-orange-100 text-orange-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {user.avatar}
+                      <div className="w-6 h-6 rounded text-xs font-semibold flex items-center justify-center bg-blue-100 text-blue-700">
+                        {getAvatarInitials(member)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(user.status)}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(member.status)}`} />
                     </div>
-                    <span className="text-sm text-muted-foreground">{user.name}</span>
+                    <span className="text-sm text-muted-foreground">{member.full_name || member.username}</span>
                   </div>
                 ))
+              ) : (
+                <div className="py-4 text-sm text-muted-foreground text-center">
+                  No members found
+                </div>
               )}
             </div>
           </div>
