@@ -8,6 +8,7 @@ import { cache } from "@/lib/cache";
 import { getAppSettings } from "@/lib/settings";
 
 export function SettingsPage() {
+  const [showCacheSettings, setShowCacheSettings] = useState(false);
   const [settings, setSettings] = useState({
     // Notifications
     desktopNotifications: true,
@@ -27,6 +28,7 @@ export function SettingsPage() {
     cacheEnabled: false, // Default to disabled
     projectsCacheEnabled: false, // Default to disabled
     channelsCacheEnabled: false, // Default to disabled
+    membersCacheEnabled: false, // Default to disabled
     workspaceCacheEnabled: false, // Default to disabled
   });
 
@@ -40,9 +42,15 @@ export function SettingsPage() {
           cacheEnabled: cache.isEnabled(),
           projectsCacheEnabled: cache.isProjectsCacheEnabled(),
           channelsCacheEnabled: cache.isChannelsCacheEnabled(),
+          membersCacheEnabled: cache.isMembersCacheEnabled(),
           workspaceCacheEnabled: cache.isWorkspaceCacheEnabled(),
           showLoadingScreen: appSettings.showLoadingScreen
         }));
+        
+        // Check if cache settings should be shown
+        const shouldShowCache = process.env.NODE_ENV === 'development' || 
+                               localStorage.getItem('show_cache_settings') === 'true';
+        setShowCacheSettings(shouldShowCache);
       } catch (error) {
         console.warn('Failed to load settings:', error);
       }
@@ -83,6 +91,10 @@ export function SettingsPage() {
     
     if (key === 'channelsCacheEnabled' && typeof value === 'boolean') {
       cache.setChannelsCacheEnabled(value);
+    }
+    
+    if (key === 'membersCacheEnabled' && typeof value === 'boolean') {
+      cache.setMembersCacheEnabled(value);
     }
     
     if (key === 'workspaceCacheEnabled' && typeof value === 'boolean') {
@@ -212,8 +224,8 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Development Tools (only in development) */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* Cache Settings - show in development or when explicitly enabled */}
+        {showCacheSettings && (
           <div className="space-y-3">
             <h3 className="flex items-center text-lg font-medium text-foreground">
               <Database className="h-5 w-5 text-primary mr-2" />
@@ -243,6 +255,13 @@ export function SettingsPage() {
                 />
                 
                 <SettingItem
+                  label="Members Caching"
+                  description="Cache project members for each project"
+                  checked={settings.membersCacheEnabled}
+                  onChange={(checked) => handleSettingChange('membersCacheEnabled', checked)}
+                />
+                
+                <SettingItem
                   label="Workspace Caching"
                   description="Cache complete workspace data (projects + channels + messages)"
                   checked={settings.workspaceCacheEnabled}
@@ -263,7 +282,7 @@ export function SettingsPage() {
       </div>
 
       {/* Cache Debugger - conditionally rendered */}
-      {process.env.NODE_ENV === 'development' && settings.showCacheDebugger && (
+      {showCacheSettings && settings.showCacheDebugger && (
         <div className="bg-background border border-border rounded-lg p-6">
           <h3 className="flex items-center text-lg font-medium text-foreground mb-4">
             <Database className="h-5 w-5 text-primary mr-2" />

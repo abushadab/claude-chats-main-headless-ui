@@ -14,6 +14,7 @@ class CacheManager {
   private enabledKey = 'cache_enabled';
   private projectsCacheKey = 'projects_cache_enabled';
   private channelsCacheKey = 'channels_cache_enabled';
+  private membersCacheKey = 'members_cache_enabled';
   private workspaceCacheKey = 'workspace_cache_enabled';
 
   /**
@@ -54,6 +55,21 @@ class CacheManager {
     
     try {
       const enabled = localStorage.getItem(this.channelsCacheKey);
+      // Default to following global cache setting
+      return enabled !== null ? enabled === 'true' : this.isEnabled();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if members caching is enabled
+   */
+  isMembersCacheEnabled(): boolean {
+    if (!this.isLocalStorageAvailable()) return false;
+    
+    try {
+      const enabled = localStorage.getItem(this.membersCacheKey);
       // Default to following global cache setting
       return enabled !== null ? enabled === 'true' : this.isEnabled();
     } catch {
@@ -131,6 +147,24 @@ class CacheManager {
   }
 
   /**
+   * Enable or disable members caching
+   */
+  setMembersCacheEnabled(enabled: boolean): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      localStorage.setItem(this.membersCacheKey, enabled.toString());
+      
+      // If disabling, clear members cache
+      if (!enabled) {
+        this.clearMembersCache();
+      }
+    } catch (error) {
+      console.warn('Failed to set members cache enabled state:', error);
+    }
+  }
+
+  /**
    * Enable or disable workspace caching
    */
   setWorkspaceCacheEnabled(enabled: boolean): void {
@@ -162,11 +196,12 @@ class CacheManager {
   /**
    * Set item in cache with optional TTL
    */
-  set<T>(key: string, data: T, ttlMs?: number, cacheType?: 'projects' | 'channels' | 'workspace'): boolean {
+  set<T>(key: string, data: T, ttlMs?: number, cacheType?: 'projects' | 'channels' | 'members' | 'workspace'): boolean {
     // Check specific cache type or fall back to global cache setting
     let cacheEnabled = this.isEnabled();
     if (cacheType === 'projects') cacheEnabled = this.isProjectsCacheEnabled();
     else if (cacheType === 'channels') cacheEnabled = this.isChannelsCacheEnabled();
+    else if (cacheType === 'members') cacheEnabled = this.isMembersCacheEnabled();
     else if (cacheType === 'workspace') cacheEnabled = this.isWorkspaceCacheEnabled();
     
     if (!this.isLocalStorageAvailable() || !cacheEnabled) return false;
@@ -190,11 +225,12 @@ class CacheManager {
   /**
    * Get item from cache, returns null if expired or not found
    */
-  get<T>(key: string, cacheType?: 'projects' | 'channels' | 'workspace'): T | null {
+  get<T>(key: string, cacheType?: 'projects' | 'channels' | 'members' | 'workspace'): T | null {
     // Check specific cache type or fall back to global cache setting
     let cacheEnabled = this.isEnabled();
     if (cacheType === 'projects') cacheEnabled = this.isProjectsCacheEnabled();
     else if (cacheType === 'channels') cacheEnabled = this.isChannelsCacheEnabled();
+    else if (cacheType === 'members') cacheEnabled = this.isMembersCacheEnabled();
     else if (cacheType === 'workspace') cacheEnabled = this.isWorkspaceCacheEnabled();
     
     if (!this.isLocalStorageAvailable() || !cacheEnabled) return null;
@@ -224,7 +260,7 @@ class CacheManager {
   /**
    * Check if cache item exists and is not expired
    */
-  has(key: string, cacheType?: 'projects' | 'channels' | 'workspace'): boolean {
+  has(key: string, cacheType?: 'projects' | 'channels' | 'members' | 'workspace'): boolean {
     return this.get(key, cacheType) !== null;
   }
 

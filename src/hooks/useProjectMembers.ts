@@ -19,10 +19,15 @@ export function useProjectMembers(projectId: string | undefined): UseProjectMemb
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [previousProjectId, setPreviousProjectId] = useState<string | undefined>();
 
   const fetchMembers = useCallback(async () => {
     if (!projectId || projectId === '') {
-      setMembers([]);
+      // Don't clear members immediately - keep showing previous members
+      // Only clear if we really have no project
+      if (!previousProjectId) {
+        setMembers([]);
+      }
       setIsLoading(false);
       return;
     }
@@ -31,9 +36,8 @@ export function useProjectMembers(projectId: string | undefined): UseProjectMemb
     setError(null);
 
     try {
-      // Check cache first if workspace caching is enabled
-      // Members cache inherits from workspace cache setting
-      if (cache.isWorkspaceCacheEnabled()) {
+      // Check cache first if members caching is enabled
+      if (cache.isMembersCacheEnabled()) {
         const cacheKey = `${CACHE_KEYS.MEMBERS_PREFIX}${projectId}`;
         const cachedMembers = cache.get<ProjectMember[]>(cacheKey, 'members');
         
@@ -49,22 +53,24 @@ export function useProjectMembers(projectId: string | undefined): UseProjectMemb
       console.log('🔄 Fetching members from API for project:', projectId);
       const fetchedMembers = await projectsService.getProjectMembers(projectId);
       
-      // Cache the members if workspace caching is enabled
-      if (cache.isWorkspaceCacheEnabled() && fetchedMembers) {
+      // Cache the members if members caching is enabled
+      if (cache.isMembersCacheEnabled() && fetchedMembers) {
         const cacheKey = `${CACHE_KEYS.MEMBERS_PREFIX}${projectId}`;
         cache.set(cacheKey, fetchedMembers, 10 * 60 * 1000, 'members'); // 10 min TTL
         console.log('💾 Cached members for project:', projectId);
       }
 
       setMembers(fetchedMembers);
+      setPreviousProjectId(projectId);
     } catch (err) {
       console.error('Error fetching project members:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch members'));
-      setMembers([]);
+      // Don't clear members on error - keep showing previous data
+      // setMembers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, previousProjectId]);
 
   // Fetch members when projectId changes
   useEffect(() => {
