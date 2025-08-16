@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
-import { Hash, Plus } from "lucide-react";
+import { Hash, Lock, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { mockRecentUsers } from "@/data/mockData";
 import { useChannels } from "@/hooks/useChannels";
@@ -191,7 +191,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                     <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
                     <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
@@ -225,7 +225,11 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                       }`}
                       onClick={() => handleChannelSelect(channel)}
                     >
-                    <Hash className="h-3 w-3 mr-2" />
+                    {channel.is_private ? (
+                      <Lock className="h-3 w-3 mr-2" />
+                    ) : (
+                      <Hash className="h-3 w-3 mr-2" />
+                    )}
                     <span className="text-sm">{channel.name}</span>
                     {channel.unread_count > 0 && (
                       <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center font-medium">
