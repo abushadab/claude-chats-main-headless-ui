@@ -87,12 +87,12 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     }
   };
 
-  // Handle channel creation
+  // Handle channel creation - returns true on success, false on failure
   const handleChannelCreated = async (channelData: { 
     name: string; 
     description?: string; 
     isPrivate?: boolean; 
-  }) => {
+  }): Promise<boolean> => {
     try {
       const newChannel = await createChannel(channelData);
       
@@ -107,15 +107,17 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
         title: "Channel created",
         description: `#${newChannel.name} has been created successfully`,
       });
+      
+      return true; // Success
     } catch (error: any) {
-      console.error('Channel creation error:', error);
+      // Show error in toast (no console.error needed for expected errors)
       toast({
         title: "Error",
         description: error.message || "Failed to create channel. Please try again.",
         variant: "destructive",
       });
-      // Re-throw the error so the modal knows the creation failed
-      throw error;
+      
+      return false; // Failure
     }
   };
 

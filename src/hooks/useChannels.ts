@@ -163,8 +163,9 @@ export function useChannels(projectId?: string | 'skip', skipFetch = false): Use
       queryClient.invalidateQueries({ queryKey: ['channels', projectId] });
       cache.remove(cacheKey);
       
-      const errorMsg = err.message || 'Failed to create channel';
-      throw new Error(errorMsg);
+      // Pass the error through without wrapping it in a new Error
+      // This preserves the original error and avoids console pollution
+      throw err;
     }
   }, [queryClient, projectId, cacheKey]);
 

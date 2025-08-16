@@ -285,7 +285,12 @@ class ProjectsService {
       
       throw new Error(response.data?.error?.message || 'Failed to create channel');
     } catch (error: any) {
-      console.error('Error creating project channel:', error);
+      // Don't log expected errors (409 Conflict for duplicate names)
+      // Only log unexpected errors for debugging
+      if (error.response?.status !== 409) {
+        console.error('Error creating project channel:', error);
+      }
+      
       // Pass through the actual API error message
       throw new Error(error.response?.data?.error?.message || error.message || 'Failed to create channel');
     }

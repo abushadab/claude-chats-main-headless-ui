@@ -29,7 +29,7 @@ interface CreateChannelModalProps {
     name: string;
     description?: string;
     isPrivate?: boolean;
-  }) => void;
+  }) => Promise<boolean>;
 }
 
 
@@ -49,8 +49,6 @@ export function CreateChannelModal({
   const [nameError, setNameError] = useState("");
   const { toast } = useToast();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  console.log('CreateChannelModal render - showSuccess:', showSuccess, 'isCreating:', isCreating, 'showCreateChannelModal:', showCreateChannelModal);
 
   // Format channel name (lowercase, replace spaces with hyphens)
   const formatChannelName = (name: string) => {
@@ -91,31 +89,26 @@ export function CreateChannelModal({
 
   // Handle create channel
   const handleCreateChannel = async () => {
-    console.log('handleCreateChannel called, current showSuccess:', showSuccess);
-    
     if (!validateChannelName(channelName)) {
       return;
     }
 
-    console.log('Setting isCreating=true, showSuccess=false');
     setIsCreating(true);
     setShowSuccess(false); // Ensure success is false when starting new creation
 
-    try {
-      const formattedName = formatChannelName(channelName);
-      
-      const channelData = {
-        name: formattedName,
-        description: channelDescription || undefined,
-        isPrivate: isPrivate,
-      };
+    const formattedName = formatChannelName(channelName);
+    
+    const channelData = {
+      name: formattedName,
+      description: channelDescription || undefined,
+      isPrivate: isPrivate,
+    };
 
-      console.log('Calling onChannelCreated with:', channelData);
-      // Call parent callback which handles the actual API call
-      await onChannelCreated(channelData);
-      
-      console.log('Success! Setting showSuccess=true');
-      // Only show success animation if we reach this point (no error thrown)
+    // Call parent callback which handles the actual API call and returns success/failure
+    const success = await onChannelCreated(channelData);
+    
+    if (success) {
+      // Only show success animation if creation succeeded
       setIsCreating(false);
       setShowSuccess(true);
 
@@ -125,9 +118,7 @@ export function CreateChannelModal({
       }
 
       // Reset form and close after animation
-      console.log('Setting timeout to close modal in 1.5s');
       timeoutRef.current = setTimeout(() => {
-        console.log('Timeout fired - resetting form and closing modal');
         setChannelName("");
         setChannelDescription("");
         setIsPrivate(false);
@@ -137,9 +128,8 @@ export function CreateChannelModal({
         
         onClose();
       }, 1500);
-    } catch (error: any) {
-      // Error occurred, don't show success animation
-      console.log('Channel creation error in modal, setting success to false');
+    } else {
+      // Creation failed, just reset the creating state
       setShowSuccess(false);
       setIsCreating(false);
       // Clear any pending timeout
@@ -147,34 +137,28 @@ export function CreateChannelModal({
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      // Error toast is handled by parent component
+      // Error toast is already shown by parent component
     }
   };
 
   // Reset form when modal opens or closes
   useEffect(() => {
-    console.log('Modal state changed, showCreateChannelModal:', showCreateChannelModal, 'current showSuccess:', showSuccess);
-    
     if (showCreateChannelModal) {
       // Clear any pending timeout when opening modal
       if (timeoutRef.current) {
-        console.log('Clearing existing timeout on modal open');
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
       // Reset success state when opening modal
-      console.log('Modal opening - resetting showSuccess to false');
       setShowSuccess(false);
       setIsCreating(false);
     } else {
       // Clear any pending timeout when closing modal
       if (timeoutRef.current) {
-        console.log('Clearing existing timeout on modal close');
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
       // Reset entire form when closing modal
-      console.log('Modal closing - resetting entire form');
       setChannelName("");
       setChannelDescription("");
       setIsPrivate(false);
