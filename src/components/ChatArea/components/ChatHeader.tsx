@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/headless-button";
-import { Hash, Users, Info, Search } from "lucide-react";
+import { Hash, Lock, Users, Info, Search } from "lucide-react";
 import type { Channel } from "@/types/chat.types";
 import type { Project } from "@/types/project.types";
 
@@ -18,14 +18,15 @@ export function ChatHeader({ channel, project, showRightSidebar, onToggleSidebar
   return (
     <div className="h-[60px] border-b border-border bg-background px-4 flex items-center justify-between">
       <div className="flex items-center">
-        <Hash className="h-5 w-5 text-muted-foreground mr-2" />
+        {channel.is_private ? (
+          <Lock className="h-5 w-5 text-muted-foreground mr-2" />
+        ) : (
+          <Hash className="h-5 w-5 text-muted-foreground mr-2" />
+        )}
         <div>
           <h2 className="font-semibold text-foreground">{channel.name}</h2>
           <p className="text-sm text-muted-foreground">{project.member_count} members</p>
         </div>
-        {channel.is_private && (
-          <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Private</span>
-        )}
       </div>
       <div className="flex items-center space-x-2">
         <Button 
