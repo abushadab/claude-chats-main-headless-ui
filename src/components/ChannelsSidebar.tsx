@@ -143,7 +143,10 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     <div className="w-72 flex-shrink-0 bg-muted border-r border-border flex flex-col">
       {/* Project Header */}
       <div className="h-[60px] px-4 flex items-center border-b border-border">
-        <div className="w-4 h-4 rounded mr-3 flex-shrink-0 bg-primary" />
+        <div 
+          className="w-4 h-4 rounded mr-3 flex-shrink-0" 
+          style={{ backgroundColor: project?.color || displayProject.color || '#3b82f6' }}
+        />
         <div>
           <h2 className="font-bold text-foreground">{displayProject.name}</h2>
           <p className="text-sm text-muted-foreground">{displayProject.member_count} members</p>
