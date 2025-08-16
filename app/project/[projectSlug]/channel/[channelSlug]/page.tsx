@@ -530,7 +530,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               selectedProjectId={project.project_id}
               selectedChannelId={current_channel.channel_id}
               selectedChannelSlug={channelSlug}
-              channels={workspaceData ? channels : undefined}
+              channels={channels}
             />
             
             {/* Chat area with workspace data */}

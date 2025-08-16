@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/headless-button";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import type { Channel, Message } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Agent {
   id: string;
@@ -59,6 +60,7 @@ export function MessagesArea({
   setLightboxImage,
   setShowAgentPicker,
 }: MessagesAreaProps) {
+  const { user } = useAuth();
   
   return (
     <div className="flex-1 overflow-y-auto px-2 py-4">
@@ -89,9 +91,8 @@ export function MessagesArea({
               filteredMessages[index - 1].created_at === message.created_at &&
               filteredMessages[index - 1].type !== 'system';
             
-            // For now, consider non-agent messages as current user messages
-            // TODO: Implement proper current user detection with auth context
-            const isCurrentUser = !message.from_agent && message.user_id !== null;
+            // Check if message is from current user by comparing user IDs
+            const isCurrentUser = user?.id === message.user_id;
             const isSystemMessage = message.type === 'system';
             const isPinned = pinnedMessageIds.has(message.message_id);
             

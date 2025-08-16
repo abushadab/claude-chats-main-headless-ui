@@ -373,16 +373,16 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
               {/* Create Project Button - Inside SidebarMenu for consistent spacing */}
               <SidebarMenuItem className="flex items-center justify-center">
                 <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                  <DialogTrigger asChild>
-                    <DiscordTooltip content="Create Project">
+                  <DiscordTooltip content="Create Project">
+                    <DialogTrigger asChild>
                       <Button
                         variant="ghost"
                         className="w-10 h-10 p-0 flex items-center justify-center rounded-lg transition-colors border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-accent"
                       >
                         <Plus className="h-4 w-4 text-muted-foreground" />
                       </Button>
-                    </DiscordTooltip>
-                  </DialogTrigger>
+                    </DialogTrigger>
+                  </DiscordTooltip>
                 <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>
@@ -515,16 +515,6 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
             <Skeleton className="h-9 w-9 rounded-lg" />
           ) : (
             <>
-              <DiscordTooltip content="Test Loading Screen">
-                <button
-                  className="p-2 hover:bg-accent rounded-lg transition-colors"
-                  onClick={() => router.push('/test-loading')}
-                >
-                  <div className="h-5 w-5 text-muted-foreground flex items-center justify-center text-xs font-bold">
-                    L
-                  </div>
-                </button>
-              </DiscordTooltip>
               <DiscordTooltip content="Settings">
                 <button
                   className="p-2 hover:bg-accent rounded-lg transition-colors"
