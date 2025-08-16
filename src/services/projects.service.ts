@@ -256,18 +256,38 @@ class ProjectsService {
         {
           name: data.name,
           description: data.description,
-          is_private: data.isPrivate || false,
+          isPrivate: data.isPrivate || false,
         }
       );
       
-      if (response.data.success && response.data.data?.channel) {
-        return response.data.data.channel;
+      // Handle multiple possible response formats from the backend
+      if (response.data) {
+        // Direct channel object
+        if (response.data.channel_id) {
+          return response.data;
+        }
+        
+        // Backend returns { success: true, channel: {...} }
+        if (response.data.success && response.data.channel) {
+          return response.data.channel;
+        }
+        
+        // Wrapped in data structure
+        if (response.data.success && response.data.data?.channel) {
+          return response.data.data.channel;
+        }
+        
+        // Just wrapped in data
+        if (response.data.data && response.data.data.channel_id) {
+          return response.data.data;
+        }
       }
       
-      throw new Error(response.data.error?.message || 'Failed to create channel');
+      throw new Error(response.data?.error?.message || 'Failed to create channel');
     } catch (error: any) {
       console.error('Error creating project channel:', error);
-      throw new Error(error.message || 'Failed to create channel');
+      // Pass through the actual API error message
+      throw new Error(error.response?.data?.error?.message || error.message || 'Failed to create channel');
     }
   }
 }

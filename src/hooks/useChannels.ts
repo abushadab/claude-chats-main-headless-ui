@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatService } from '@/services/chat.service';
+import { projectsService } from '@/services/projects.service';
 import { cache, CACHE_KEYS, CACHE_TTL, STALE_THRESHOLD } from '@/lib/cache';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Channel } from '@/types';
@@ -25,14 +26,14 @@ interface UseChannelsReturn {
 // Stable empty array to prevent re-renders
 const EMPTY_CHANNELS: Channel[] = [];
 
-export function useChannels(projectId?: string | 'skip'): UseChannelsReturn {
+export function useChannels(projectId?: string | 'skip', skipFetch = false): UseChannelsReturn {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const cacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${projectId || 'all'}`;
 
   // Handle the 'skip' case for backward compatibility
   // Also skip if not authenticated or if projectId is invalid (empty/loading/placeholder)
-  const shouldFetch = Boolean(
+  const shouldFetch = !skipFetch && Boolean(
     projectId && 
     projectId !== 'skip' && 
     projectId !== 'loading' && 
@@ -129,11 +130,13 @@ export function useChannels(projectId?: string | 'skip'): UseChannelsReturn {
     description?: string; 
     isPrivate?: boolean;
   }) => {
-    if (!shouldFetch) {
-      throw new Error('Cannot create channel in skip mode');
+    // Check if we have a valid project ID for creating channels
+    if (!projectId || projectId === 'skip' || projectId === 'loading') {
+      throw new Error('Cannot create channel: invalid project ID');
     }
     try {
-      const newChannel = await chatService.createChannel(data);
+      // Use the project-specific endpoint
+      const newChannel = await projectsService.createProjectChannel(projectId, data);
       
       // 1. Update current project's channels cache optimistically
       queryClient.setQueryData(['channels', projectId], (oldData: Channel[] | undefined) => {

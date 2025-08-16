@@ -27,15 +27,14 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const [previousChannels, setPreviousChannels] = useState<Channel[]>([]);
   
   // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
-  // Don't skip based on project ID value - let useChannels handle invalid IDs
-  const shouldSkipFetch = !!preFetchedChannels;
+  // Pass the actual project ID always - useChannels will handle skipping fetch internally
   const { 
     channels: fetchedChannels, 
     isLoading, 
     error, 
     createChannel, 
     refreshChannels 
-  } = useChannels(shouldSkipFetch ? 'skip' : selectedProjectId);
+  } = useChannels(selectedProjectId, !!preFetchedChannels);
   
   // Use pre-fetched channels if available
   const projectChannels = preFetchedChannels || fetchedChannels;
@@ -108,12 +107,15 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
         title: "Channel created",
         description: `#${newChannel.name} has been created successfully`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Channel creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create channel. Please try again.",
+        description: error.message || "Failed to create channel. Please try again.",
         variant: "destructive",
       });
+      // Re-throw the error so the modal knows the creation failed
+      throw error;
     }
   };
 

@@ -1,29 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/headless-input";
 import { Button } from "@/components/ui/headless-button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Hash, 
   Lock,
   Globe,
   Users,
-  MessageSquare,
   Sparkles,
   CheckCircle,
   Loader2,
   AlertCircle,
-  Volume2,
-  FileText,
-  Code,
-  Palette,
-  Briefcase
+  FileText
 } from "lucide-react";
 
 interface CreateChannelModalProps {
@@ -38,44 +32,6 @@ interface CreateChannelModalProps {
   }) => void;
 }
 
-const channelTypes = [
-  { 
-    value: 'general', 
-    label: 'General', 
-    icon: MessageSquare, 
-    description: 'For general discussions'
-  },
-  { 
-    value: 'announcements', 
-    label: 'Announcements', 
-    icon: Volume2, 
-    description: 'Important updates and news'
-  },
-  { 
-    value: 'development', 
-    label: 'Development', 
-    icon: Code, 
-    description: 'Code and development discussions'
-  },
-  { 
-    value: 'design', 
-    label: 'Design', 
-    icon: Palette, 
-    description: 'Design feedback and reviews'
-  },
-  { 
-    value: 'docs', 
-    label: 'Documentation', 
-    icon: FileText, 
-    description: 'Documentation and guides'
-  },
-  { 
-    value: 'business', 
-    label: 'Business', 
-    icon: Briefcase, 
-    description: 'Business and strategy'
-  }
-];
 
 export function CreateChannelModal({ 
   showCreateChannelModal, 
@@ -86,14 +42,15 @@ export function CreateChannelModal({
 }: CreateChannelModalProps) {
   const [channelName, setChannelName] = useState("");
   const [channelDescription, setChannelDescription] = useState("");
-  const [channelType, setChannelType] = useState("general");
   const [isPrivate, setIsPrivate] = useState(false);
-  const [isVoiceChannel, setIsVoiceChannel] = useState(false);
   const [inviteMembers, setInviteMembers] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nameError, setNameError] = useState("");
   const { toast } = useToast();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  console.log('CreateChannelModal render - showSuccess:', showSuccess, 'isCreating:', isCreating, 'showCreateChannelModal:', showCreateChannelModal);
 
   // Format channel name (lowercase, replace spaces with hyphens)
   const formatChannelName = (name: string) => {
@@ -134,11 +91,15 @@ export function CreateChannelModal({
 
   // Handle create channel
   const handleCreateChannel = async () => {
+    console.log('handleCreateChannel called, current showSuccess:', showSuccess);
+    
     if (!validateChannelName(channelName)) {
       return;
     }
 
+    console.log('Setting isCreating=true, showSuccess=false');
     setIsCreating(true);
+    setShowSuccess(false); // Ensure success is false when starting new creation
 
     try {
       const formattedName = formatChannelName(channelName);
@@ -149,44 +110,89 @@ export function CreateChannelModal({
         isPrivate: isPrivate,
       };
 
+      console.log('Calling onChannelCreated with:', channelData);
       // Call parent callback which handles the actual API call
       await onChannelCreated(channelData);
       
-      // Show success animation
+      console.log('Success! Setting showSuccess=true');
+      // Only show success animation if we reach this point (no error thrown)
       setIsCreating(false);
       setShowSuccess(true);
 
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
       // Reset form and close after animation
-      setTimeout(() => {
+      console.log('Setting timeout to close modal in 1.5s');
+      timeoutRef.current = setTimeout(() => {
+        console.log('Timeout fired - resetting form and closing modal');
         setChannelName("");
         setChannelDescription("");
-        setChannelType("general");
         setIsPrivate(false);
-        setIsVoiceChannel(false);
         setInviteMembers(true);
         setShowSuccess(false);
+        timeoutRef.current = null;
         
         onClose();
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
+      // Error occurred, don't show success animation
+      console.log('Channel creation error in modal, setting success to false');
+      setShowSuccess(false);
       setIsCreating(false);
+      // Clear any pending timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       // Error toast is handled by parent component
     }
   };
 
-  // Reset form when modal closes
+  // Reset form when modal opens or closes
   useEffect(() => {
-    if (!showCreateChannelModal) {
+    console.log('Modal state changed, showCreateChannelModal:', showCreateChannelModal, 'current showSuccess:', showSuccess);
+    
+    if (showCreateChannelModal) {
+      // Clear any pending timeout when opening modal
+      if (timeoutRef.current) {
+        console.log('Clearing existing timeout on modal open');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      // Reset success state when opening modal
+      console.log('Modal opening - resetting showSuccess to false');
+      setShowSuccess(false);
+      setIsCreating(false);
+    } else {
+      // Clear any pending timeout when closing modal
+      if (timeoutRef.current) {
+        console.log('Clearing existing timeout on modal close');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      // Reset entire form when closing modal
+      console.log('Modal closing - resetting entire form');
       setChannelName("");
       setChannelDescription("");
-      setChannelType("general");
       setIsPrivate(false);
-      setIsVoiceChannel(false);
       setInviteMembers(true);
       setShowSuccess(false);
       setNameError("");
+      setIsCreating(false);
     }
   }, [showCreateChannelModal]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Dialog open={showCreateChannelModal} onOpenChange={onClose}>
@@ -245,37 +251,6 @@ export function CreateChannelModal({
               </p>
             </div>
 
-            {/* Channel Type */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Channel Type
-              </Label>
-              <RadioGroup value={channelType} onValueChange={setChannelType} disabled={isCreating}>
-                <div className="grid grid-cols-2 gap-2">
-                  {channelTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <div key={type.value}>
-                        <RadioGroupItem
-                          value={type.value}
-                          id={type.value}
-                          className="peer sr-only"
-                        />
-                        <Label
-                          htmlFor={type.value}
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-background p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                        >
-                          <Icon className="h-5 w-5 mb-1" />
-                          <span className="text-xs font-medium">{type.label}</span>
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </RadioGroup>
-            </div>
-
             {/* Channel Description */}
             <div className="space-y-2">
               <Label htmlFor="channel-description" className="flex items-center gap-2">
@@ -311,26 +286,6 @@ export function CreateChannelModal({
                   id="private-channel"
                   checked={isPrivate}
                   onCheckedChange={setIsPrivate}
-                  disabled={isCreating}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4" />
-                  <div>
-                    <Label htmlFor="voice-channel" className="text-sm font-medium">
-                      Voice Channel
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enable voice communication
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="voice-channel"
-                  checked={isVoiceChannel}
-                  onCheckedChange={setIsVoiceChannel}
                   disabled={isCreating}
                 />
               </div>
