@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import { mockProjects } from "@/data/mockData";
 import { useMessages } from "@/hooks/useMessages";
-import { useChannels } from "@/hooks/useChannels";
 import { useProjects } from "@/hooks/useProjects";
 import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
-import type { Message } from "@/types/chat.types";
+import type { Message, Channel, Project } from "@/types/chat.types";
 import { MessagesArea } from "./MessagesArea";
 import { DeleteConfirmationModal } from "./modals/DeleteConfirmationModal";
 import { ImageLightbox } from "./modals/ImageLightbox";
@@ -85,9 +84,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     }
   }, [messages, isLoadingMessages]);
   
-  // Fetch channels only for the current project (more efficient)
-  // Skip if selectedProjectId is a fake loading ID
-  const { channels } = useChannels(selectedProjectId === 'loading' ? 'skip' as any : selectedProjectId);
+  // REMOVED useChannels hook - we only use initialChannel from workspace API now
+  // This eliminates redundant API calls since workspace API already provides the channel
 
   // Use the message actions hook
   const {
@@ -115,8 +113,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     user.name.toLowerCase().includes(mentionSearch.toLowerCase())
   );
   
-  // Find the current channel from initial data or real channels data
-  const channel = initialChannel || channels.find(c => c.channel_id === selectedChannelId);
+  // Use the channel from workspace API (initialChannel is passed as prop)
+  const channel = initialChannel;
   
   // Get project info from initial data or real projects data
   const { projects } = useProjects();

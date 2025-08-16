@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Hash, Lock, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { mockRecentUsers } from "@/data/mockData";
-import { useChannels } from "@/hooks/useChannels";
 import { useProjects } from "@/hooks/useProjects";
+import { projectsService } from "@/services/projects.service";
 import type { Channel } from "@/types/chat.types";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
@@ -26,33 +26,25 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const { toast } = useToast();
   const [previousChannels, setPreviousChannels] = useState<Channel[]>([]);
   
-  // Always call the hook (React rules), but skip fetching if we have pre-fetched channels
-  // Pass the actual project ID always - useChannels will handle skipping fetch internally
-  const { 
-    channels: fetchedChannels, 
-    isLoading, 
-    error, 
-    createChannel, 
-    refreshChannels 
-  } = useChannels(selectedProjectId, !!preFetchedChannels);
+  // REMOVED useChannels hook - we only use channels from workspace API now
+  // This eliminates redundant API calls since workspace API already provides channels
   
-  // Use pre-fetched channels if available
-  const projectChannels = preFetchedChannels || fetchedChannels;
+  // Always use pre-fetched channels from workspace API
+  const projectChannels = preFetchedChannels || [];
+  const isLoading = false; // No longer loading channels separately
+  const error = null; // No channel-specific errors
   
   // Update previous channels when we get new data (even if empty)
   React.useEffect(() => {
-    if (!isLoading) {
-      // Always update previous channels, even if empty
-      // This prevents showing wrong project's channels during transitions
-      setPreviousChannels(projectChannels);
-    }
-  }, [projectChannels, isLoading]);
+    // Always update previous channels since we're not loading separately anymore
+    setPreviousChannels(projectChannels);
+  }, [projectChannels]);
 
   // Get real projects data
   const { projects } = useProjects();
   
-  // Use previous channels while loading new ones to prevent flash
-  const displayChannels = isLoading && projectChannels.length === 0 ? previousChannels : projectChannels;
+  // Use current channels since there's no loading state anymore
+  const displayChannels = projectChannels;
   
   // All channels are text channels (no voice channels in current API)
   const textChannels = displayChannels;
@@ -94,7 +86,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     isPrivate?: boolean; 
   }): Promise<boolean> => {
     try {
-      const newChannel = await createChannel(channelData);
+      // Use projectsService directly instead of useChannels hook
+      const newChannel = await projectsService.createProjectChannel(selectedProjectId, channelData);
       
       // Navigate to the new channel (only if we have a real project)
       if (project && project.slug) {
@@ -121,23 +114,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     }
   };
 
-  // Show error state
-  if (error) {
-    return (
-      <div className="w-72 flex-shrink-0 bg-muted border-r border-border flex flex-col">
-        <div className="h-[60px] px-4 flex items-center border-b border-border">
-          <div className="text-red-500 text-sm">
-            Error loading channels: {error}
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Button onClick={refreshChannels} variant="outline" size="sm">
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // No error state needed - channels come from workspace API which has its own error handling
 
   return (
     <div className="w-72 flex-shrink-0 bg-muted border-r border-border flex flex-col">
@@ -186,27 +163,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1 px-2">
-              {isLoading && textChannels.length === 0 ? (
-                // Skeleton loading state
-                <>
-                  <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
-                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
-                  </div>
-                  <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Lock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
-                    <div className="h-4 w-24 bg-muted-foreground/20 rounded animate-pulse" />
-                  </div>
-                  <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
-                    <div className="h-4 w-28 bg-muted-foreground/20 rounded animate-pulse" />
-                  </div>
-                  <div className="w-full h-8 px-2 flex items-center space-x-2">
-                    <Hash className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
-                    <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
-                  </div>
-                </>
-              ) : textChannels.length === 0 ? (
+              {textChannels.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground text-center">
                   No channels found
                 </div>
