@@ -22,7 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Textarea } from "@/components/ui/textarea";
-import { useProjects } from "@/hooks/useProjectsCrud";
+import { useProjects } from "@/hooks/useProjects";
+import { projectService } from "@/services/project.service";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@/types/project.types";
 import type { Channel } from "@/types/chat.types";
@@ -37,7 +38,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   const { toast } = useToast();
   
   // Use real projects API
-  const { projects, createProject } = useProjects();
+  const { projects, refreshProjects } = useProjects();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -145,7 +146,10 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
           color: selectedColorData?.color, // Pass the hex color to the API
         };
         
-        const newProject = await createProject(projectData);
+        const newProject = await projectService.createProject(projectData);
+        
+        // Refresh the projects list
+        await refreshProjects();
         
         // Show success animation in modal
         setIsCreating(false);
