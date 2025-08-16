@@ -52,17 +52,21 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
           localStorage.setItem('last_visited_project', projectSlug);
           localStorage.setItem('last_visited_channel', channelSlug);
           localStorage.setItem('last_visited_url', `/project/${projectSlug}/channel/${channelSlug}`);
-          
-          // Save last visited channel for this specific project if we have the data
-          // We'll update this when workspace data loads
-          const projectId = workspaceDataRef.current?.project?.project_id;
-          if (projectId && projectId !== '') {
-            localStorage.setItem(`last_channel_${projectId}`, channelSlug);
-          }
         }
       });
     }
-  }, [projectSlug, channelSlug]); // Use ref to avoid dependency on workspaceData
+  }, [projectSlug, channelSlug]);
+  
+  // Save last visited channel for specific project when we have the project ID
+  useEffect(() => {
+    if (workspaceData?.project?.project_id && channelSlug) {
+      import('@/lib/cache').then(({ cache }) => {
+        if (cache.isProjectsCacheEnabled()) {
+          localStorage.setItem(`last_channel_${workspaceData.project.project_id}`, channelSlug);
+        }
+      });
+    }
+  }, [workspaceData?.project?.project_id, channelSlug]);
 
   // Handle "default" project redirect - TEMPORARILY DISABLED TO DEBUG
   // useEffect(() => {

@@ -71,10 +71,16 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         const cachedChannels = cache.get<Channel[]>(channelsCacheKey, 'channels');
         
         if (cachedChannels && cachedChannels.length > 0) {
-          // Use the first channel from cache
-          const firstChannel = cachedChannels[0];
-          // console.log('Using first channel from cache:', firstChannel.slug || firstChannel.name);
-          targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
+          // Smart channel selection:
+          // 1. Try to find a channel with messages (non-empty)
+          // 2. Otherwise use "general" if it exists
+          // 3. Otherwise use the first channel
+          let selectedChannel = cachedChannels.find(c => c.last_message_at) ||
+                               cachedChannels.find(c => c.slug === 'general' || c.name.toLowerCase() === 'general') ||
+                               cachedChannels[0];
+          
+          // console.log('Using channel from cache:', selectedChannel.slug || selectedChannel.name);
+          targetUrl = `/project/${project.slug}/channel/${selectedChannel.slug || selectedChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
         } else {
           // No cache found, fetch channels to determine the first channel
           // console.log('No cached channels, fetching for project:', projectId);
@@ -88,10 +94,16 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
               cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
             }
             
-            // Use the first channel
-            const firstChannel = channels[0];
-            // console.log('Using first channel:', firstChannel.slug || firstChannel.name);
-            targetUrl = `/project/${project.slug}/channel/${firstChannel.slug || firstChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
+            // Smart channel selection (same logic as cached):
+            // 1. Try to find a channel with messages (non-empty)
+            // 2. Otherwise use "general" if it exists
+            // 3. Otherwise use the first channel
+            let selectedChannel = channels.find(c => c.last_message_at) ||
+                                 channels.find(c => c.slug === 'general' || c.name.toLowerCase() === 'general') ||
+                                 channels[0];
+            
+            // console.log('Using channel:', selectedChannel.slug || selectedChannel.name);
+            targetUrl = `/project/${project.slug}/channel/${selectedChannel.slug || selectedChannel.name.toLowerCase().replace(/\s+/g, '-')}`;
           } else {
             // console.log('No channels found for project:', projectId);
           }
