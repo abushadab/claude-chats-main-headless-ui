@@ -49,6 +49,10 @@ export interface ProjectMember {
   project_id: string;
   role: 'member' | 'moderator' | 'admin';
   joined_at: string;
+  invited_by?: string;         // UUID of user who invited this member
+  invited_by_username?: string; // Username of inviter
+  status?: 'online' | 'offline' | 'away' | 'busy';
+  last_seen?: string;
   user?: {
     user_id: string;
     username: string;

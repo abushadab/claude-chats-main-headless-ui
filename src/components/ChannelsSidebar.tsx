@@ -6,33 +6,23 @@ import { useRouter } from "next/navigation";
 import { useProjects } from "@/hooks/useProjects";
 import { projectsService } from "@/services/projects.service";
 import type { Channel } from "@/types/chat.types";
+import type { ProjectMember } from "@/types/project.types";
 import { Button } from "@/components/ui/headless-button";
 import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CreateChannelModal } from "@/components/ChatArea/modals/CreateChannelModal";
 import { useToast } from "@/hooks/use-toast";
 
-interface Member {
-  user_id: string;
-  username: string;
-  full_name: string;
-  email: string;
-  avatar_url: string | null;
-  status: string;
-  last_seen: string;
-  role: string;
-  joined_at: string;
-}
-
 interface ChannelsSidebarProps {
   selectedProjectId: string;
   selectedChannelId: string;
   selectedChannelSlug?: string; // Channel slug from URL for matching
   channels?: Channel[]; // Pre-fetched channels from parent
-  activeMembers?: Member[]; // Pre-fetched active members from workspace API
+  projectMembers?: ProjectMember[]; // ALL project members from dedicated API
+  isLoadingMembers?: boolean; // Loading state for members
 }
 
-export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selectedChannelSlug, channels: preFetchedChannels, activeMembers }: ChannelsSidebarProps) {
+export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selectedChannelSlug, channels: preFetchedChannels, projectMembers, isLoadingMembers }: ChannelsSidebarProps) {
   const router = useRouter();
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const { toast } = useToast();
@@ -49,9 +39,10 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   const projectChannels = preFetchedChannels || [];
   const error = null; // No channel-specific errors
   
-  // Determine if we should show skeleton
+  // Determine if we should show skeleton - separate for channels and members
   const isProjectChanging = currentProjectId !== null && currentProjectId !== selectedProjectId;
-  const shouldShowSkeleton = isInitialLoad || isProjectChanging || projectChannels.length === 0;
+  const shouldShowChannelsSkeleton = isInitialLoad || isProjectChanging || projectChannels.length === 0;
+  const shouldShowMembersSkeleton = isLoadingMembers || (!projectMembers && isInitialLoad);
   
   console.log('🔍 [ChannelsSidebar] Skeleton Logic:', {
     selectedProjectId,
@@ -60,7 +51,10 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     isProjectChanging,
     preFetchedChannelsCount: preFetchedChannels?.length || 0,
     projectChannelsCount: projectChannels.length,
-    shouldShowSkeleton,
+    shouldShowChannelsSkeleton,
+    shouldShowMembersSkeleton,
+    projectMembersCount: projectMembers?.length || 0,
+    isLoadingMembers,
     timestamp: new Date().toISOString().split('T')[1]
   });
   
@@ -134,8 +128,9 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   };
 
   // Generate avatar initials from full_name, fallback to username
-  const getAvatarInitials = (member: Member): string => {
-    const name = member.full_name || member.username || '';
+  const getAvatarInitials = (member: ProjectMember): string => {
+    // Member data is directly on the object, not nested under 'user'
+    const name = (member as any).full_name || (member as any).username || member.user?.full_name || member.user?.username || '';
     const words = name.trim().split(' ');
     if (words.length >= 2) {
       return (words[0][0] + words[words.length - 1][0]).toUpperCase();
@@ -227,7 +222,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1 px-2">
-              {shouldShowSkeleton ? (
+              {shouldShowChannelsSkeleton ? (
                 // Skeleton loading state - using Hash icons only
                 <>
                   <div className="w-full h-8 px-2 flex items-center space-x-2">
@@ -300,7 +295,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
             </div>
             
             <div className="space-y-1">
-              {shouldShowSkeleton ? (
+              {shouldShowMembersSkeleton ? (
                 // Skeleton loading state for users
                 <>
                   <div className="flex items-center px-2 py-1.5">
@@ -339,8 +334,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                     <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
                   </div>
                 </>
-              ) : activeMembers && activeMembers.length > 0 ? (
-                activeMembers.map((member) => (
+              ) : projectMembers && projectMembers.length > 0 ? (
+                projectMembers.map((member) => (
                   <div
                     key={member.user_id}
                     className="flex items-center px-2 py-1.5 rounded"
@@ -349,9 +344,9 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
                       <div className="w-6 h-6 rounded text-xs font-semibold flex items-center justify-center bg-blue-100 text-blue-700">
                         {getAvatarInitials(member)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(member.status)}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor((member as any).status || member.status || 'offline')}`} />
                     </div>
-                    <span className="text-sm text-muted-foreground">{member.full_name || member.username}</span>
+                    <span className="text-sm text-muted-foreground">{(member as any).full_name || (member as any).username || member.user?.full_name || member.user?.username || 'Unknown'}</span>
                   </div>
                 ))
               ) : (

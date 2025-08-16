@@ -324,6 +324,24 @@ class CacheManager {
   }
 
   /**
+   * Clear members cache specifically
+   */
+  clearMembersCache(): void {
+    if (!this.isLocalStorageAvailable()) return;
+    
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith(this.prefix + 'members') || key.includes('members_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to clear members cache:', error);
+    }
+  }
+
+  /**
    * Clear all cache items with our prefix
    */
   clear(): void {
@@ -397,6 +415,7 @@ export const CACHE_KEYS = {
   PROJECTS: 'projects',
   PROJECT_PREFIX: 'project_',
   CHANNELS_PREFIX: 'channels_',
+  MEMBERS_PREFIX: 'members_',
   USER_PROFILE: 'user_profile',
   WORKSPACE_PREFIX: 'workspace_',
 } as const;

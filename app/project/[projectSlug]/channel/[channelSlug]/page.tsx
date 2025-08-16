@@ -7,6 +7,7 @@ import { ChannelsSidebar } from "@/components/ChannelsSidebar"
 import { ChatArea } from "@/components/ChatArea"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
+import { useProjectMembers } from "@/hooks/useProjectMembers"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
 import { notFound, useRouter } from "next/navigation"
 import type { Project } from "@/types/project.types"
@@ -319,6 +320,13 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     stats = { members_online: 0, total_channels: 0, unread_total: 0 } 
   } = dataToUse;
 
+  // Fetch project members using the dedicated API
+  // This fetches ALL members, not just active/online ones
+  const { 
+    members: projectMembers, 
+    isLoading: isLoadingMembers 
+  } = useProjectMembers(project?.project_id);
+
   // Find the current channel from channels array
   let current_channel = dataToUse.current_channel;
   
@@ -568,7 +576,8 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               selectedChannelId={current_channel.channel_id}
               selectedChannelSlug={channelSlug}
               channels={channels}
-              activeMembers={active_members}
+              projectMembers={projectMembers}
+              isLoadingMembers={isLoadingMembers}
             />
             
             {/* Chat area with workspace data */}

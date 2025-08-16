@@ -153,12 +153,15 @@ class ProjectsService {
    */
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
     try {
-      const response = await axiosInstance.get<ApiResponse<{ members: ProjectMember[] }>>(
-        `${this.baseUrl}/${projectId}/members`
-      );
+      const response = await axiosInstance.get<{
+        success: boolean;
+        members: ProjectMember[];
+        count: number;
+        error?: { message: string; code: string; };
+      }>(`${this.baseUrl}/${projectId}/members`);
       
       if (response.data.success) {
-        return response.data.data?.members || [];
+        return response.data.members || [];
       }
       
       throw new Error(response.data.error?.message || 'Failed to fetch project members');
