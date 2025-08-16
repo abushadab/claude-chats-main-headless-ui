@@ -338,7 +338,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           filteredMessages={filteredMessages}
           channel={channelToUse}
           selectedChannelId={selectedChannelId}
-          isLoadingMessages={isLoadingMessages && !initialMessages}
+          isLoadingMessages={initialMessages === undefined}
           pinnedMessageIds={pinnedMessageIds}
           editedMessages={editedMessages}
           deletingMessages={deletingMessages}

@@ -539,7 +539,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
               selectedChannelId={current_channel.channel_id}
               initialChannel={current_channel}
               initialProject={project}
-              initialMessages={workspaceData?.messages_included ? messages : undefined}
+              initialMessages={workspaceData?.messages_included && workspaceData?.current_channel?.slug === channelSlug ? messages : undefined}
             />
           </div>
         </div>
