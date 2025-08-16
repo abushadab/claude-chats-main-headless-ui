@@ -62,6 +62,7 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   slug?: string; // Optional, auto-generated if not provided
+  color?: string; // Optional hex color, random color assigned if not provided
 }
 
 export interface UpdateProjectData {

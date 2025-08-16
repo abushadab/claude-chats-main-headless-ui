@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/headless-button";
 import { Input } from "@/components/ui/headless-input";
 import { Textarea } from "@/components/ui/textarea";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects } from "@/hooks/useProjectsCrud";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@/types/project.types";
 import type { Channel } from "@/types/chat.types";
@@ -121,12 +121,14 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
   const availableColors = [
     { name: 'Blue', value: 'bg-blue-500', color: '#3b82f6' },
     { name: 'Purple', value: 'bg-purple-500', color: '#8b5cf6' },
-    { name: 'Green', value: 'bg-green-500', color: '#10b981' },
+    { name: 'Emerald', value: 'bg-emerald-500', color: '#10b981' },
     { name: 'Orange', value: 'bg-orange-500', color: '#f97316' },
     { name: 'Pink', value: 'bg-pink-500', color: '#ec4899' },
     { name: 'Red', value: 'bg-red-500', color: '#ef4444' },
-    { name: 'Yellow', value: 'bg-yellow-500', color: '#eab308' },
+    { name: 'Amber', value: 'bg-amber-500', color: '#f59e0b' },
     { name: 'Indigo', value: 'bg-indigo-500', color: '#6366f1' },
+    { name: 'Cyan', value: 'bg-cyan-500', color: '#06b6d4' },
+    { name: 'Lime', value: 'bg-lime-500', color: '#84cc16' },
   ];
 
   const handleCreateProject = async () => {
@@ -134,13 +136,16 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
       setIsCreating(true);
       
       try {
+        // Find the selected color's hex value
+        const selectedColorData = availableColors.find(c => c.value === selectedColor);
+        
         const projectData = {
           name: newProjectName,
           description: newProjectDescription || undefined,
+          color: selectedColorData?.color, // Pass the hex color to the API
         };
         
         const newProject = await createProject(projectData);
-        // console.log('Project created:', newProject);
         
         // Show success animation in modal
         setIsCreating(false);
@@ -171,7 +176,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
           setShowSuccess(false);
           setShowCreateModal(false);
         }, 1500);
-      } catch (error) {
+      } catch (error: any) {
         setIsCreating(false);
         toast({
           title: "Error",

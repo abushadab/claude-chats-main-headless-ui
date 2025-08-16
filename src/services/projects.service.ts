@@ -70,19 +70,40 @@ class ProjectsService {
    */
   async createProject(data: CreateProjectData): Promise<Project> {
     try {
-      const response = await axiosInstance.post<ApiResponse<{ project: Project }>>(
+      const response = await axiosInstance.post<any>(
         this.baseUrl,
         data
       );
       
-      if (response.data.success && response.data.data?.project) {
-        return response.data.data.project;
+      // Handle multiple possible response formats
+      if (response.data) {
+        // Direct project object
+        if (response.data.project_id) {
+          return response.data as Project;
+        }
+        
+        // Backend returns { success: true, project: {...} }
+        if (response.data.success && response.data.project) {
+          return response.data.project as Project;
+        }
+        
+        // Wrapped in success/data structure
+        if (response.data.success && response.data.data) {
+          const project = response.data.data.project || response.data.data;
+          if (project && project.project_id) {
+            return project as Project;
+          }
+        }
+        
+        // Just wrapped in data
+        if (response.data.data && response.data.data.project_id) {
+          return response.data.data as Project;
+        }
       }
       
-      throw new Error(response.data.error?.message || 'Failed to create project');
+      throw new Error(response.data?.error?.message || 'Failed to create project');
     } catch (error: any) {
-      console.error('Error creating project:', error);
-      throw new Error(error.message || 'Failed to create project');
+      throw new Error(error.response?.data?.error || error.message || 'Failed to create project');
     }
   }
 

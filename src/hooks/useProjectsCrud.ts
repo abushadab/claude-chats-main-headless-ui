@@ -127,7 +127,6 @@ export function useProjects(): UseProjectsReturn {
       if (cache.isProjectsCacheEnabled()) {
         cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
       }
-      console.log('✅ Project created and cache updated:', newProject.name);
       
       return newProject;
     } catch (err: any) {
