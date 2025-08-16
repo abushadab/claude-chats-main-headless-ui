@@ -163,9 +163,32 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
         });
 
         // Navigate to the new project after a short delay
-        setTimeout(() => {
-          // New projects typically start with a general channel
-          router.push(`/project/${newProject.slug}/channel/general`);
+        setTimeout(async () => {
+          // Try to fetch channels for the new project to get the default channel
+          try {
+            const { chatService } = await import('@/services/chat.service');
+            const { cache, CACHE_KEYS, CACHE_TTL } = await import('@/lib/cache');
+            const channels = await chatService.getChannels(newProject.project_id);
+            
+            // Cache the channels for the new project
+            if (cache.isChannelsCacheEnabled() && channels.length > 0) {
+              const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${newProject.project_id}`;
+              cache.set(channelsCacheKey, channels, CACHE_TTL.CHANNELS, 'channels');
+            }
+            
+            // Find the best channel to navigate to
+            const defaultChannel = channels.find(c => c.slug === 'general' || c.name.toLowerCase() === 'general') || channels[0];
+            
+            if (defaultChannel) {
+              router.push(`/project/${newProject.slug}/channel/${defaultChannel.slug || 'general'}`);
+            } else {
+              // No channels yet, just go to project with general as fallback
+              router.push(`/project/${newProject.slug}/channel/general`);
+            }
+          } catch {
+            // If fetching fails, navigate to general channel as fallback
+            router.push(`/project/${newProject.slug}/channel/general`);
+          }
         }, 1500);
         
         // Reset and close after animation

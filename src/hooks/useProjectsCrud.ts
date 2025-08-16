@@ -128,6 +128,13 @@ export function useProjects(): UseProjectsReturn {
         cache.set(CACHE_KEYS.PROJECTS, updatedProjects, CACHE_TTL.PROJECTS, 'projects');
       }
       
+      // Clear channels cache for the new project to force fresh fetch
+      // New projects typically have default channels created by backend
+      if (cache.isChannelsCacheEnabled() && newProject.project_id) {
+        const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${newProject.project_id}`;
+        cache.remove(channelsCacheKey);
+      }
+      
       return newProject;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to create project';
