@@ -41,6 +41,24 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   workspaceDataRef.current = workspaceData // Keep ref in sync
   const [, setLoading] = useState(true) // Used for loading state management
 
+  // Track if this is the initial page load
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    if (typeof window !== 'undefined') {
+      // Check if we've already loaded during this session
+      const hasLoadedBefore = sessionStorage.getItem('claude_chat_initial_load_complete');
+      return !hasLoadedBefore;
+    }
+    return true;
+  });
+
+  // Mark initial load as complete once we have data
+  useEffect(() => {
+    if (workspaceData && isInitialLoad) {
+      sessionStorage.setItem('claude_chat_initial_load_complete', 'true');
+      setIsInitialLoad(false);
+    }
+  }, [workspaceData, isInitialLoad]);
+
   // Save last visited project/channel to localStorage (only if projects caching is enabled)
   useEffect(() => {
     if (projectSlug && channelSlug) {
@@ -405,8 +423,9 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
     return !!hasCachedProjects;
   }, [projectSlug, channelSlug]);
   
-  // Now we can safely return early if needed
-  if (!displayData && !hasCachedData && shouldShowLoadingScreen()) {
+  // Only show LoadingScreen on initial page load (not on navigation)
+  // Navigation between projects/channels should use skeletons, not LoadingScreen
+  if (!displayData && !hasCachedData && shouldShowLoadingScreen() && isInitialLoad) {
     return <LoadingScreen />;
   }
 
