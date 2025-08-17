@@ -78,7 +78,7 @@ export function MessageInputSlack({
   };
 
   return (
-    <div className="border-t border-border bg-background">
+    <div className="bg-background">
       {/* Image Preview */}
       {imagePreview && (
         <div className="px-4 pt-3">

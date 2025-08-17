@@ -76,11 +76,18 @@ export function SlackStyleMessage({
     minute: '2-digit',
     hour12: true
   });
+  
+  // Compact time for hover display (no AM/PM)
+  const hoverTime = new Date(message.created_at).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).replace(/ [AP]M/i, '');
 
   return (
     <div 
       ref={messageRef}
-      className={`group flex items-start px-5 py-1 hover:bg-accent/50 transition-colors ${
+      className={`group relative flex items-start px-5 py-1 hover:bg-accent/50 transition-colors ${
         isConsecutive ? '' : 'mt-4'
       }`}
       onMouseEnter={() => setShowActions(true)}
@@ -103,8 +110,8 @@ export function SlackStyleMessage({
           </Avatar>
         ) : (
           // Show time on hover for consecutive messages
-          <span className={`text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity block text-right`}>
-            {messageTime}
+          <span className="text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity block text-right relative top-[2px]">
+            {hoverTime}
           </span>
         )}
       </div>
@@ -170,7 +177,7 @@ export function SlackStyleMessage({
 
       {/* Hover Actions Toolbar */}
       {showActions && !isEditing && (
-        <div className="absolute right-5 -top-3 bg-background border border-border rounded-md shadow-sm flex items-center">
+        <div className="absolute right-5 top-0 bg-background border border-border rounded-md shadow-sm flex items-center z-10">
           {/* Quick Reactions */}
           <Button
             size="sm"
