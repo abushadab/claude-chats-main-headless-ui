@@ -302,8 +302,16 @@ class ChatService {
         }
       );
       
-      if (response.data.success && response.data.data?.message) {
-        return response.data.data.message;
+      // Handle both response formats
+      if (response.data.success) {
+        // Backend returns {success: true, message: {...}}
+        if (response.data.message) {
+          return response.data.message;
+        }
+        // Or {success: true, data: {message: {...}}}
+        if (response.data.data?.message) {
+          return response.data.data.message;
+        }
       }
       
       throw new Error(response.data.error?.message || 'Failed to send message');

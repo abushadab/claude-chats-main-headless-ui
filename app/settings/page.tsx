@@ -6,9 +6,11 @@ import { SettingsPage } from "@/components/SettingsPage"
 import Image from "next/image"
 import { Bell } from "lucide-react"
 import { useState } from "react"
+import { useRealtime } from "@/contexts/RealtimeContext"
 
 export default function SettingsRoute() {
   const [unreadCount, setUnreadCount] = useState(2)
+  const { onlineCount, isConnected } = useRealtime()
 
   return (
     <div className="h-screen flex flex-col w-full bg-background overflow-hidden">
@@ -30,8 +32,8 @@ export default function SettingsRoute() {
         <div className="flex items-center gap-4">
           {/* Active members indicator */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span>2 online</span>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+            <span>{onlineCount || 0} online</span>
           </div>
           
           {/* Notification bell */}

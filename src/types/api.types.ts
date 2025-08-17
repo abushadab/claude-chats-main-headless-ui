@@ -6,7 +6,7 @@ export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: ApiError;
-  message?: string;
+  message?: string | any; // Can be a string or the actual message object from backend
 }
 
 export interface ApiError {

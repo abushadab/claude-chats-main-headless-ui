@@ -8,6 +8,7 @@ import { ChatArea } from "@/components/ChatArea"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
 import { useProjectMembers } from "@/hooks/useProjectMembers"
+import { useRealtime } from "@/contexts/RealtimeContext"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
 import { notFound, useRouter } from "next/navigation"
 import type { Project } from "@/types/project.types"
@@ -36,6 +37,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { projects } = useProjects() // For sidebar display and default redirect
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
+  const { onlineCount, isConnected, connectionStatus } = useRealtime()
   
   const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(null)
   const workspaceDataRef = useRef<WorkspaceResponse | null>(null)
@@ -458,8 +460,8 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
             {/* Active members indicator */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                {stats?.members_online || 0} online
+                <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                {isConnected ? (onlineCount || stats?.members_online || 0) : (stats?.members_online || 0)} online
               </span>
             </div>
             

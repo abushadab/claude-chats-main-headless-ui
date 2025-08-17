@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { mockProjects } from "@/data/mockData";
 import { useMessages } from "@/hooks/useMessages";
 import { useProjects } from "@/hooks/useProjects";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
 import type { Message, Channel, Project } from "@/types/chat.types";
@@ -74,8 +75,17 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     deleteMessage: deleteMessageAPI 
   } = useMessages(shouldFetchMessages ? selectedChannelId : undefined);
   
-  // Use initialMessages from workspace API if available, otherwise use fetched messages
-  const messages = initialMessages || fetchedMessages;
+  // Use local state for messages to enable real-time updates
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+  
+  // Initialize messages from props or API
+  useEffect(() => {
+    const baseMessages = initialMessages || fetchedMessages;
+    setRealtimeMessages(baseMessages);
+  }, [initialMessages, fetchedMessages]);
+  
+  // Use real-time messages
+  const messages = realtimeMessages;
   
   // Update previous messages when messages change
   useEffect(() => {
@@ -107,6 +117,44 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     handleDeleteMessage,
     scrollToMessage,
   } = useMessageActions(messages, () => {}); // Empty setter since messages are managed by hook
+
+  // Real-time message updates
+  const handleNewMessage = useCallback((message: Message) => {
+    console.log('[ChatArea] New real-time message:', message);
+    setRealtimeMessages(prev => {
+      // Check if message already exists (prevent duplicates)
+      if (prev.some(m => m.message_id === message.message_id)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+  }, []);
+
+  const handleMessageUpdated = useCallback((message: Message) => {
+    console.log('[ChatArea] Message updated:', message);
+    setRealtimeMessages(prev => 
+      prev.map(m => m.message_id === message.message_id ? { ...m, ...message } : m)
+    );
+  }, []);
+
+  const handleMessageDeleted = useCallback((messageId: string) => {
+    console.log('[ChatArea] Message deleted:', messageId);
+    setRealtimeMessages(prev => prev.filter(m => m.message_id !== messageId));
+  }, []);
+
+  const handleTypingUpdate = useCallback((userId: string, isTyping: boolean) => {
+    // Handle typing indicators (to be implemented)
+    console.log('[ChatArea] Typing update:', { userId, isTyping });
+  }, []);
+
+  // Connect to real-time updates
+  useRealtimeMessages({
+    channelId: selectedChannelId,
+    onNewMessage: handleNewMessage,
+    onMessageUpdated: handleMessageUpdated,
+    onMessageDeleted: handleMessageDeleted,
+    onTypingUpdate: handleTypingUpdate,
+  });
 
   // DERIVED STATE AND FUNCTIONS - AFTER ALL HOOKS
   const filteredUsers = mockUsers.filter(user => 
