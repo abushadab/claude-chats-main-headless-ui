@@ -76,7 +76,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
           // 1. Try to find a channel with messages (non-empty)
           // 2. Otherwise use "general" if it exists
           // 3. Otherwise use the first channel
-          let selectedChannel = cachedChannels.find(c => c.last_message_at) ||
+          const selectedChannel = cachedChannels.find(c => c.last_message_at) ||
                                cachedChannels.find(c => c.slug === 'general' || c.name.toLowerCase() === 'general') ||
                                cachedChannels[0];
           
@@ -99,7 +99,7 @@ export function AppSidebar({ selectedProjectId, isLoading = false }: AppSidebarP
             // 1. Try to find a channel with messages (non-empty)
             // 2. Otherwise use "general" if it exists
             // 3. Otherwise use the first channel
-            let selectedChannel = channels.find(c => c.last_message_at) ||
+            const selectedChannel = channels.find(c => c.last_message_at) ||
                                  channels.find(c => c.slug === 'general' || c.name.toLowerCase() === 'general') ||
                                  channels[0];
             
