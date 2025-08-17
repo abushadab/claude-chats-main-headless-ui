@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
 import type { Message, Channel, Project } from "@/types/chat.types";
 import { MessagesArea } from "./MessagesArea";
+import { MessagesAreaSlack } from "./MessagesAreaSlack";
 import { DeleteConfirmationModal } from "./modals/DeleteConfirmationModal";
 import { ImageLightbox } from "./modals/ImageLightbox";
 import { PinnedMessagesModal } from "./modals/PinnedMessagesModal";
@@ -20,6 +21,7 @@ import { MembersModal } from "./modals/MembersModal";
 import { SearchModal } from "./modals/SearchModal";
 import { RightSidebar } from "./components/RightSidebar";
 import { MessageInput } from "./components/MessageInput";
+import { MessageInputSlack } from "./components/MessageInputSlack";
 import { ChatHeader } from "./components/ChatHeader";
 import { EmptyChannelState } from "./components/EmptyChannelState";
 import { useMessageActions } from "./hooks/useMessageActions";
@@ -432,8 +434,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           onShowSearch={() => setShowSearchModal(true)}
         />
 
-        {/* Messages Area */}
-        <MessagesArea
+        {/* Messages Area - Slack Style */}
+        <MessagesAreaSlack
           filteredMessages={filteredMessages}
           channel={channelToUse}
           selectedChannelId={selectedChannelId}
@@ -441,23 +443,21 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           pinnedMessageIds={pinnedMessageIds}
           editedMessages={editedMessages}
           deletingMessages={deletingMessages}
-          showAgentPicker={showAgentPicker}
-          isAdmin={isAdmin}
+          editingMessage={editingMessage}
+          editContent={editContent}
+          setEditContent={setEditContent}
+          showDeleteModal={showDeleteModal}
           messageRefs={messageRefs}
-          availableAgents={availableAgents}
-          getRandomQuote={getRandomQuote}
-          canEditDelete={canEditDelete}
           handlePinMessage={handlePinMessage}
           handleUnpinMessage={handleUnpinMessage}
           handleEditMessage={handleEditMessage}
-          handleSwitchAgent={handleSwitchAgent}
+          handleSaveEdit={handleSaveEdit}
+          handleCancelEdit={handleCancelEdit}
           setShowDeleteModal={setShowDeleteModal}
-          setLightboxImage={setLightboxImage}
-          setShowAgentPicker={setShowAgentPicker}
         />
 
-        {/* Message Input */}
-        <MessageInput 
+        {/* Message Input - Slack Style */}
+        <MessageInputSlack 
           newMessage={newMessage}
           setNewMessage={setNewMessage}
           editingMessage={editingMessage}
@@ -473,6 +473,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           setShowMentionModal={setShowMentionModal}
           filteredMessages={filteredMessages}
           mockEmojis={mockEmojis}
+          channelName={channelToUse.name}
         />
 
         {/* Delete Confirmation Modal */}
