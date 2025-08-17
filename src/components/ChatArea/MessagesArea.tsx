@@ -118,7 +118,7 @@ export function MessagesArea({
     setTimeout(() => {
       scrollToBottom(false);
     }, 100);
-  }, [channel.id]);
+  }, [channel.channel_id]);
   
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-2 py-4">

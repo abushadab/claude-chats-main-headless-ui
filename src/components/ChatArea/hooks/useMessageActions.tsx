@@ -9,7 +9,7 @@ export function useMessageActions(messages: Message[], setMessages: (fn: (prev: 
   const [editContent, setEditContent] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [deletedMessage, setDeletedMessage] = useState<{id: string, message: Message, timeout: NodeJS.Timeout} | null>(null);
-  const [editedMessages, setEditedMessages] = useState<Set<string>>(new Set());
+  const [editedMessages, setEditedMessages] = useState<Map<string, string>>(new Map());
   const [deletingMessages, setDeletingMessages] = useState<Set<string>>(new Set());
   const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
   const messageRefs = useRef<{[key: string]: HTMLDivElement}>({});
@@ -75,7 +75,11 @@ export function useMessageActions(messages: Message[], setMessages: (fn: (prev: 
     if (editingMessage) {
       // TODO: Call real API to edit message
       // For now, just mark as edited locally
-      setEditedMessages(prev => new Set([...prev, editingMessage]));
+      setEditedMessages(prev => {
+        const newMap = new Map(prev);
+        newMap.set(editingMessage, new Date().toISOString());
+        return newMap;
+      });
       setEditingMessage(null);
       setEditContent('');
       

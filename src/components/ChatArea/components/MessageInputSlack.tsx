@@ -13,7 +13,8 @@ import {
   AtSign,
   Send,
   Mic,
-  Video
+  Video,
+  X
 } from "lucide-react";
 import type { Message } from "@/types/chat.types";
 
@@ -177,11 +178,8 @@ export function MessageInputSlack({
                   variant="ghost" 
                   className="h-7 w-7 p-0 hover:bg-accent"
                   title="Attach files"
-                  asChild
                 >
-                  <span>
-                    <Paperclip className="h-4 w-4" />
-                  </span>
+                  <Paperclip className="h-4 w-4" />
                 </Button>
               </label>
               <input

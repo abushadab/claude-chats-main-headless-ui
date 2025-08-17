@@ -266,22 +266,17 @@ class ProjectsService {
       // Handle multiple possible response formats from the backend
       if (response.data) {
         // Direct channel object
-        if (response.data.channel_id) {
+        if ((response.data as any).channel_id) {
           return response.data;
         }
         
-        // Backend returns { success: true, channel: {...} }
-        if (response.data.success && response.data.channel) {
-          return response.data.channel;
-        }
-        
-        // Wrapped in data structure
+        // Backend returns { success: true, data: { channel: {...} } }
         if (response.data.success && response.data.data?.channel) {
           return response.data.data.channel;
         }
         
         // Just wrapped in data
-        if (response.data.data && response.data.data.channel_id) {
+        if (response.data.data && (response.data.data as any).channel_id) {
           return response.data.data;
         }
       }

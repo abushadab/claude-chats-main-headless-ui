@@ -97,7 +97,7 @@ export function MessagesAreaSlack({
     setTimeout(() => {
       scrollToBottom(false);
     }, 100);
-  }, [channel.id]);
+  }, [channel.channel_id]);
 
   // Helper to check if messages are consecutive (from same user within 5 minutes)
   const isConsecutiveMessage = (currentMsg: Message, prevMsg: Message | undefined) => {

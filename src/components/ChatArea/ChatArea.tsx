@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { mockProjects } from "@/data/mockData";
 import { useMessages } from "@/hooks/useMessages";
 import { useProjects } from "@/hooks/useProjects";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
-import type { Message, Channel, Project } from "@/types/chat.types";
-import { MessagesArea } from "./MessagesArea";
+import type { Message, Channel } from "@/types/chat.types";
+import type { Project } from "@/types/project.types";
 import { MessagesAreaSlack } from "./MessagesAreaSlack";
 import { DeleteConfirmationModal } from "./modals/DeleteConfirmationModal";
 import { ImageLightbox } from "./modals/ImageLightbox";
@@ -20,10 +19,8 @@ import { MentionModal } from "./modals/MentionModal";
 import { MembersModal } from "./modals/MembersModal";
 import { SearchModal } from "./modals/SearchModal";
 import { RightSidebar } from "./components/RightSidebar";
-import { MessageInput } from "./components/MessageInput";
 import { MessageInputSlack } from "./components/MessageInputSlack";
 import { ChatHeader } from "./components/ChatHeader";
-import { EmptyChannelState } from "./components/EmptyChannelState";
 import { useMessageActions } from "./hooks/useMessageActions";
 import { mockUsers, availableAgents, mockEmojis, motivationalQuotes, sharedImages, sharedFiles } from "./mockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -325,14 +322,17 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
 
   // If channel is not found, create a basic channel object from the selectedChannelId
   // This ensures we always have channel data to show the header while messages load
-  const channelToUse = channel || {
+  const channelToUse: Channel = channel || {
     channel_id: selectedChannelId,
     name: selectedChannelId.replace(/-/g, ' '),
     slug: selectedChannelId,
     description: 'Loading channel...',
-    type: 'text' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    project_id: selectedProjectId,
+    project_name: project.name,
+    project_slug: project.slug,
+    is_private: false,
+    member_count: '0',
+    created_at: new Date().toISOString()
   };
 
   // Additional functions and handlers

@@ -21,7 +21,6 @@ import {
   PopoverTrigger 
 } from "@/components/ui/popover";
 import type { Message } from "@/types";
-import { formatMessageTime } from "@/lib/utils";
 
 interface SlackStyleMessageProps {
   message: Message;

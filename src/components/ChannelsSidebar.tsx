@@ -106,7 +106,8 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     project_id: selectedProjectId,
     name: 'Loading...',
     member_count: 0,
-    slug: '' // Empty slug prevents navigation
+    slug: '', // Empty slug prevents navigation
+    color: '#3b82f6' // Default blue color for loading state
   };
 
   const handleChannelSelect = (channel: Channel) => {
