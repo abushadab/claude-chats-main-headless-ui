@@ -24,9 +24,16 @@ export function useRealtimeMessages({
 
   // Handle new messages
   const handleChannelMessage = useCallback((data: any) => {
+    console.log('[useRealtimeMessages] Received message event:', {
+      data,
+      currentChannelId: channelId,
+      messageChannelId: data.channelId || data.channel_id,
+      userId: data.user_id,
+    });
+    
     // Check if this message is for our channel
     const messageChannelId = data.channelId || data.channel_id;
-    if (messageChannelId !== channelId) {
+    if (messageChannelId && messageChannelId !== channelId) {
       console.log('[useRealtimeMessages] Message for different channel:', messageChannelId, '!==', channelId);
       return;
     }

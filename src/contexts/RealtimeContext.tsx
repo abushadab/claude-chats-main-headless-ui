@@ -132,6 +132,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       realtimeService.on('channel_message', (data) => {
         console.log('[RealtimeContext] New channel message:', data);
         
+        // Emit the event to all subscribers (like useRealtimeMessages)
+        eventEmitter.emit('channel_message', data);
+        
         // Show notification for messages in other channels
         if (data.senderId !== user.id && data.channelId !== getCurrentChannelId()) {
           toast.info(`New message in #${data.channelName || 'channel'}`, {
@@ -146,11 +149,40 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       realtimeService.on('broadcast', (data) => {
         console.log('[RealtimeContext] Broadcast message:', data);
         
+        // Emit the broadcast event to all subscribers
+        // This allows useRealtimeMessages to receive broadcast messages
+        eventEmitter.emit('broadcast', data);
+        
+        // Also handle system messages
         if (data.type === 'system') {
           toast.info(data.message);
         } else if (data.type === 'alert') {
           toast.error(data.message);
         }
+      })
+    );
+    
+    // Handle generic message events
+    unsubscribers.push(
+      realtimeService.on('message', (data) => {
+        console.log('[RealtimeContext] Generic message:', data);
+        eventEmitter.emit('message', data);
+      })
+    );
+    
+    // Handle typing events
+    unsubscribers.push(
+      realtimeService.on('typing', (data) => {
+        console.log('[RealtimeContext] Typing event:', data);
+        eventEmitter.emit('typing', data);
+      })
+    );
+    
+    // Handle channel events
+    unsubscribers.push(
+      realtimeService.on('channel_event', (data) => {
+        console.log('[RealtimeContext] Channel event:', data);
+        eventEmitter.emit('channel_event', data);
       })
     );
 
