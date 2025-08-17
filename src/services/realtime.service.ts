@@ -1,5 +1,4 @@
 import { config } from '@/config';
-import Cookies from 'js-cookie';
 
 export interface SSEConfig {
   url?: string;
@@ -38,12 +37,12 @@ class RealtimeService {
     this.handleOpen = this.handleOpen.bind(this);
   }
 
-  connect(config: SSEConfig = {}): void {
+  connect(sseConfig: SSEConfig = {}): void {
     this.config = {
-      url: config.url || 'https://hudhud-api.baytlabs.com/api/realtime/stream',
-      reconnectInterval: config.reconnectInterval || 5000,
-      maxReconnectAttempts: config.maxReconnectAttempts || 10,
-      ...config,
+      url: sseConfig.url || config.api.sseUrl,
+      reconnectInterval: sseConfig.reconnectInterval || 5000,
+      maxReconnectAttempts: sseConfig.maxReconnectAttempts || 10,
+      ...sseConfig,
     };
 
     this.isIntentionallyClosed = false;
@@ -75,7 +74,12 @@ class RealtimeService {
       url.searchParams.append('lastEventId', this.lastEventId);
     }
 
-    console.log('[RealtimeService] Connecting to SSE:', url.origin + url.pathname);
+    console.log('[RealtimeService] Connecting to SSE:', {
+      url: url.origin + url.pathname,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      fullUrl: url.toString().replace(token, 'REDACTED')
+    });
 
     try {
       this.eventSource = new EventSource(url.toString());
@@ -175,6 +179,20 @@ class RealtimeService {
   }
 
   private handleError(event: Event): void {
+    const errorEvent = event as any;
+    const state = this.eventSource?.readyState;
+    const stateText = state === EventSource.CONNECTING ? 'CONNECTING' : 
+                      state === EventSource.OPEN ? 'OPEN' : 
+                      state === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN';
+    
+    console.error('[RealtimeService] SSE connection error:', {
+      readyState: stateText,
+      url: this.config.url,
+      error: errorEvent.message || errorEvent.error || 'Unknown error',
+      type: errorEvent.type,
+      isIntentionallyClosed: this.isIntentionallyClosed
+    });
+    
     if (this.eventSource?.readyState === EventSource.CLOSED) {
       console.log('[RealtimeService] SSE connection closed');
       
@@ -182,15 +200,7 @@ class RealtimeService {
         this.updateConnectionStatus('disconnected');
         this.scheduleReconnect();
       }
-    } else {
-      // SSE errors don't provide much detail, but we can check readyState
-      const state = this.eventSource?.readyState;
-      const stateText = state === EventSource.CONNECTING ? 'CONNECTING' : 
-                        state === EventSource.OPEN ? 'OPEN' : 
-                        state === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN';
-      
-      console.warn(`[RealtimeService] SSE connection issue (state: ${stateText}). This is normal and will auto-reconnect.`);
-      
+    } else {      
       if (!this.isIntentionallyClosed && state !== EventSource.CONNECTING) {
         this.updateConnectionStatus('error');
         this.scheduleReconnect();
