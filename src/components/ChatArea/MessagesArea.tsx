@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react";
 import { Hash, Edit3, Trash2, MoreHorizontal, Pin } from "lucide-react";
 import { Button } from "@/components/ui/headless-button";
 import { Avatar, AvatarFallback } from "@/components/ui/headless-avatar";
@@ -61,9 +62,66 @@ export function MessagesArea({
   setShowAgentPicker,
 }: MessagesAreaProps) {
   const { user } = useAuth();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
+  
+  // Check if user is near bottom of scroll
+  const isNearBottom = () => {
+    if (!scrollContainerRef.current) return true; // Default to true if not yet mounted
+    const threshold = 150; // pixels from bottom (increased for better detection)
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    return distanceFromBottom < threshold;
+  };
+  
+  // Scroll to bottom
+  const scrollToBottom = (smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'end'
+      });
+    }
+  };
+  
+  // Track if user was at bottom before update
+  const wasAtBottomRef = useRef(true);
+  
+  // Check scroll position before messages update
+  useEffect(() => {
+    wasAtBottomRef.current = isNearBottom();
+  });
+  
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    // Check if new messages were added
+    if (filteredMessages.length > lastMessageCountRef.current) {
+      // Only scroll if user was near bottom before the update
+      if (wasAtBottomRef.current) {
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          scrollToBottom(true);
+        });
+      }
+    }
+    
+    // Update the message count
+    lastMessageCountRef.current = filteredMessages.length;
+  }, [filteredMessages.length]);
+  
+  // Initial scroll to bottom when component mounts or channel changes
+  useEffect(() => {
+    // Reset message count when channel changes
+    lastMessageCountRef.current = filteredMessages.length;
+    // Scroll to bottom on initial load
+    setTimeout(() => {
+      scrollToBottom(false);
+    }, 100);
+  }, [channel.id]);
   
   return (
-    <div className="flex-1 overflow-y-auto px-2 py-4">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-2 py-4">
       <div className="space-y-1">
         {filteredMessages.length === 0 ? (
           isLoadingMessages ? null : (
@@ -294,6 +352,8 @@ export function MessagesArea({
             );
           })
         )}
+        {/* Invisible element at the end for scroll targeting */}
+        <div ref={messagesEndRef} />
       </div>
     </div>
   );
