@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { mockProjects } from "@/data/mockData";
 import { useMessages } from "@/hooks/useMessages";
 import { useProjects } from "@/hooks/useProjects";
@@ -77,12 +77,48 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   
   // Use local state for messages to enable real-time updates
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+  const [lastChannelId, setLastChannelId] = useState<string | undefined>();
+  const processedMessageIds = useRef<Set<string>>(new Set());
   
   // Initialize messages from props or API
   useEffect(() => {
     const baseMessages = initialMessages || fetchedMessages;
-    setRealtimeMessages(baseMessages);
-  }, [initialMessages, fetchedMessages]);
+    
+    // If channel changed, reset messages and clear processed IDs
+    if (lastChannelId !== selectedChannelId) {
+      setRealtimeMessages(baseMessages);
+      setLastChannelId(selectedChannelId);
+      processedMessageIds.current.clear(); // Clear processed IDs for new channel
+      return;
+    }
+    
+    // If we have real-time messages, merge with fetched messages
+    setRealtimeMessages(prev => {
+      if (prev.length === 0) {
+        return baseMessages;
+      }
+      
+      // Create a map of existing messages by ID
+      const messageMap = new Map<string, Message>();
+      baseMessages.forEach(msg => {
+        if (msg.message_id) {
+          messageMap.set(msg.message_id, msg);
+        }
+      });
+      
+      // Add any real-time messages that aren't in the fetched messages
+      prev.forEach(msg => {
+        if (msg.message_id && !messageMap.has(msg.message_id)) {
+          messageMap.set(msg.message_id, msg);
+        }
+      });
+      
+      // Return merged messages sorted by created_at
+      return Array.from(messageMap.values()).sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, [initialMessages, fetchedMessages, selectedChannelId, lastChannelId]);
   
   // Use real-time messages
   const messages = realtimeMessages;
@@ -121,8 +157,25 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   // Real-time message updates
   const handleNewMessage = useCallback((message: Message) => {
     console.log('[ChatArea] New real-time message:', message);
+    
+    // Check if we've already processed this message
+    if (message.message_id && processedMessageIds.current.has(message.message_id)) {
+      console.log('[ChatArea] Skipping duplicate message:', message.message_id);
+      return;
+    }
+    
+    // Mark as processed
+    if (message.message_id) {
+      processedMessageIds.current.add(message.message_id);
+      // Clean up old IDs to prevent memory leak
+      if (processedMessageIds.current.size > 100) {
+        const ids = Array.from(processedMessageIds.current);
+        ids.slice(0, 50).forEach(id => processedMessageIds.current.delete(id));
+      }
+    }
+    
     setRealtimeMessages(prev => {
-      // Check if message already exists (prevent duplicates)
+      // Double-check in state as well
       if (prev.some(m => m.message_id === message.message_id)) {
         return prev;
       }

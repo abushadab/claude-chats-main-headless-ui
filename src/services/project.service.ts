@@ -3,7 +3,7 @@ import type { Project, ActiveMember, CreateProjectData, UpdateProjectData } from
 import type { Channel } from '@/types/chat.types';
 
 class ProjectService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hudhud.baytlabs.com/api';
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hudhud-api.baytlabs.com/api';
 
   /**
    * Get all projects (lightweight version for initial load)

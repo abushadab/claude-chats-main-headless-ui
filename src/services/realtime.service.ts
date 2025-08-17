@@ -40,7 +40,7 @@ class RealtimeService {
 
   connect(config: SSEConfig = {}): void {
     this.config = {
-      url: config.url || 'https://hudhud.baytlabs.com/api/realtime/stream',
+      url: config.url || 'https://hudhud-api.baytlabs.com/api/realtime/stream',
       reconnectInterval: config.reconnectInterval || 5000,
       maxReconnectAttempts: config.maxReconnectAttempts || 10,
       ...config,
