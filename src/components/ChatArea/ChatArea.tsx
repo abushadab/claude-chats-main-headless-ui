@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useMessages } from "@/hooks/useMessages";
 import { useProjects } from "@/hooks/useProjects";
-import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
 import type { Message, Channel } from "@/types/chat.types";
@@ -42,7 +42,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [showAgentPicker, setShowAgentPicker] = useState<string | null>(null);
+  // const [showAgentPicker, setShowAgentPicker] = useState<string | null>(null);
   const [isAdmin] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [showAllImagesModal, setShowAllImagesModal] = useState(false);
@@ -60,7 +60,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   const { toast } = useToast();
   
   // Keep track of previous messages and channel to avoid showing quotes during transitions
-  const [previousMessages, setPreviousMessages] = useState<Message[]>([]);
+  // const [previousMessages, setPreviousMessages] = useState<Message[]>([]);
   
   // Use real messages API
   // Skip if selectedChannelId is a fake loading ID or if we have initialMessages from workspace API
@@ -70,8 +70,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     isLoading: isLoadingMessages, 
     error: messagesError, 
     sendMessage: sendMessageAPI, 
-    editMessage: editMessageAPI, 
-    deleteMessage: deleteMessageAPI 
+    // editMessage: editMessageAPI, 
+    // deleteMessage: deleteMessageAPI 
   } = useMessages(shouldFetchMessages ? selectedChannelId : undefined);
   
   // Use local state for messages to enable real-time updates
@@ -123,11 +123,11 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   const messages = realtimeMessages;
   
   // Update previous messages when messages change
-  useEffect(() => {
-    if (!isLoadingMessages) {
-      setPreviousMessages(messages);
-    }
-  }, [messages, isLoadingMessages]);
+  // useEffect(() => {
+  //   if (!isLoadingMessages) {
+  //     setPreviousMessages(messages);
+  //   }
+  // }, [messages, isLoadingMessages]);
   
   // REMOVED useChannels hook - we only use initialChannel from workspace API now
   // This eliminates redundant API calls since workspace API already provides the channel
@@ -148,18 +148,15 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     handleEditMessage,
     handleSaveEdit,
     handleCancelEdit,
-    handleSoftDeleteMessage,
+    // handleSoftDeleteMessage,
     handleDeleteMessage,
     scrollToMessage,
   } = useMessageActions(messages, () => {}); // Empty setter since messages are managed by hook
 
   // Real-time message updates
   const handleNewMessage = useCallback((message: Message) => {
-    console.log('[ChatArea] New real-time message:', message);
-    
     // Check if we've already processed this message
     if (message.message_id && processedMessageIds.current.has(message.message_id)) {
-      console.log('[ChatArea] Skipping duplicate message:', message.message_id);
       return;
     }
     
@@ -183,24 +180,21 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   }, []);
 
   const handleMessageUpdated = useCallback((message: Message) => {
-    console.log('[ChatArea] Message updated:', message);
     setRealtimeMessages(prev => 
       prev.map(m => m.message_id === message.message_id ? { ...m, ...message } : m)
     );
   }, []);
 
   const handleMessageDeleted = useCallback((messageId: string) => {
-    console.log('[ChatArea] Message deleted:', messageId);
     setRealtimeMessages(prev => prev.filter(m => m.message_id !== messageId));
   }, []);
 
-  const handleTypingUpdate = useCallback((userId: string, isTyping: boolean) => {
-    // Handle typing indicators (to be implemented)
-    console.log('[ChatArea] Typing update:', { userId, isTyping });
+  const handleTypingUpdate = useCallback(() => {
+    // Typing indicators are handled by the UI components
   }, []);
 
-  // Connect to real-time updates
-  useRealtimeMessages({
+  // Connect to WebSocket real-time updates
+  const { sendTypingStart, sendTypingStop } = useWebSocketMessages({
     channelId: selectedChannelId,
     onNewMessage: handleNewMessage,
     onMessageUpdated: handleMessageUpdated,
@@ -247,11 +241,11 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   const filteredMessages = messages;
 
   // Get a consistent random quote for this channel
-  const getRandomQuote = (channelId: string) => {
-    const seed = channelId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const index = seed % motivationalQuotes.length;
-    return motivationalQuotes[index];
-  };
+  // const getRandomQuote = (channelId: string) => {
+  //   const seed = channelId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  //   const index = seed % motivationalQuotes.length;
+  //   return motivationalQuotes[index];
+  // };
 
   // CONDITIONAL RETURNS - ONLY AFTER ALL HOOKS ARE CALLED
   // Only show skeleton if we're loading and don't have initial data
@@ -340,12 +334,28 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     if (newMessage.trim() || selectedImage) {
       try {
         // Send message via API
-        await sendMessageAPI({
+        const response = await sendMessageAPI({
           content: newMessage.trim(),
           channelId: selectedChannelId,
           type: MessageType.TEXT,
           metadata: selectedImage ? { hasImage: true } : {},
         });
+        
+        // TEMPORARY WORKAROUND: Add message immediately while waiting for WebSocket
+        // Remove this once backend broadcasts WebSocket events properly
+        if (response && response.message_id) {
+          const tempMessage: Message = {
+            ...response,
+            // Ensure all required fields are present
+            reactions: response.reactions || [],
+            thread_count: response.thread_count || 0,
+            files: response.files || [],
+            edited_at: response.edited_at || undefined,
+          };
+          
+          // Add to messages if not already received via WebSocket
+          handleNewMessage(tempMessage);
+        }
         
         // Clear input after successful send
         setNewMessage('');
@@ -365,10 +375,10 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
     }
   };
 
-  const handleSwitchAgent = (messageId: string, newAgent: typeof availableAgents[0]) => {
-    // This would need to be implemented with real API calls
-    setShowAgentPicker(null);
-  };
+  // const handleSwitchAgent = (messageId: string, newAgent: typeof availableAgents[0]) => {
+  //   // This would need to be implemented with real API calls
+  //   setShowAgentPicker(null);
+  // };
 
   // File download handler
   const handleFileDownload = (file: { name: string; type: string; size?: string }) => {
@@ -376,10 +386,10 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
   };
 
   // Check if user can edit/delete message
-  const canEditDelete = (message: Message) => {
-    // For real API messages, check if user owns the message or is admin
-    return isAdmin || message.user_id === 'current'; // TODO: Replace with actual current user ID
-  };
+  // const canEditDelete = (message: Message) => {
+  //   // For real API messages, check if user owns the message or is admin
+  //   return isAdmin || message.user_id === 'current'; // TODO: Replace with actual current user ID
+  // };
 
   // Get pinned messages from current chat
   const getPinnedMessages = () => {
@@ -474,6 +484,8 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           filteredMessages={filteredMessages}
           mockEmojis={mockEmojis}
           channelName={channelToUse.name}
+          onTypingStart={sendTypingStart}
+          onTypingStop={sendTypingStop}
         />
 
         {/* Delete Confirmation Modal */}

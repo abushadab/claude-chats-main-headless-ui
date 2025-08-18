@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/headless-button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { 
@@ -35,6 +36,8 @@ interface MessageInputSlackProps {
   filteredMessages: Message[];
   mockEmojis: string[];
   channelName?: string;
+  onTypingStart?: () => void;
+  onTypingStop?: () => void;
 }
 
 export function MessageInputSlack({
@@ -45,16 +48,55 @@ export function MessageInputSlack({
   setEditContent,
   handleSaveEdit,
   handleCancelEdit,
-  selectedImage,
+  // selectedImage,
   imagePreview,
   setSelectedImage,
   setImagePreview,
   handleSendMessage,
   setShowMentionModal,
-  filteredMessages,
+  // filteredMessages,
   mockEmojis,
-  channelName = "channel"
+  channelName = "channel",
+  onTypingStart,
+  onTypingStop
 }: MessageInputSlackProps) {
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+
+  // Handle typing indicators
+  useEffect(() => {
+    return () => {
+      // Cleanup: stop typing on unmount
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTypingRef.current && onTypingStop) {
+        onTypingStop();
+      }
+    };
+  }, [onTypingStop]);
+
+  const handleTyping = () => {
+    // Start typing if not already typing
+    if (!isTypingRef.current && onTypingStart) {
+      isTypingRef.current = true;
+      onTypingStart();
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to stop typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTypingRef.current && onTypingStop) {
+        isTypingRef.current = false;
+        onTypingStop();
+      }
+    }, 2000);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
@@ -70,6 +112,16 @@ export function MessageInputSlack({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      
+      // Stop typing indicator when sending
+      if (isTypingRef.current && onTypingStop) {
+        isTypingRef.current = false;
+        onTypingStop();
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      }
+      
       if (editingMessage) {
         handleSaveEdit();
       } else {
@@ -159,6 +211,10 @@ export function MessageInputSlack({
                   setEditContent(value);
                 } else {
                   setNewMessage(value);
+                  // Trigger typing indicator for new messages
+                  if (value.trim()) {
+                    handleTyping();
+                  }
                 }
               }}
               onKeyDown={handleKeyDown}

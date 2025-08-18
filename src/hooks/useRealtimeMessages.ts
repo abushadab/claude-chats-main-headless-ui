@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { useRealtime } from '@/contexts/RealtimeContext';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 import { Message } from '@/types';
 import { toast } from 'sonner';
 
@@ -18,7 +18,7 @@ export function useRealtimeMessages({
   onMessageDeleted,
   onTypingUpdate,
 }: UseRealtimeMessagesOptions) {
-  const { subscribe, unsubscribe, isConnected } = useRealtime();
+  const { socket, isConnected } = useWebSocket();
   const processedMessageIds = useRef<Set<string>>(new Set());
   const typingTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
@@ -181,26 +181,36 @@ export function useRealtimeMessages({
 
   // Set up subscriptions
   useEffect(() => {
-    if (!isConnected || !channelId) {
+    if (!socket || !isConnected || !channelId) {
       return;
     }
 
     console.log('[useRealtimeMessages] Setting up real-time subscriptions for channel:', channelId);
 
-    const unsubscribers = [
-      subscribe('channel_message', handleChannelMessage),
-      subscribe('broadcast', handleChannelMessage), // Handle broadcast messages
-      subscribe('message', handleChannelMessage), // Fallback for generic message events
-      subscribe('typing', handleTypingIndicator),
-      subscribe('channel_event', handleChannelEvent),
-    ];
+    // Join the channel - backend expects array directly
+    socket.emit('join-channels', [channelId]);
+
+    // Set up event listeners
+    socket.on('new-message', handleChannelMessage);
+    socket.on('message-updated', handleChannelMessage);
+    socket.on('message-deleted', (data: any) => {
+      if (onMessageDeleted && data.messageId) {
+        onMessageDeleted(data.messageId);
+      }
+    });
+    socket.on('user-typing', handleTypingIndicator);
+    socket.on('channel-event', handleChannelEvent);
 
     // Clear processed IDs when channel changes
     processedMessageIds.current.clear();
 
     return () => {
       console.log('[useRealtimeMessages] Cleaning up subscriptions for channel:', channelId);
-      unsubscribers.forEach(unsub => unsub());
+      socket.off('new-message', handleChannelMessage);
+      socket.off('message-updated', handleChannelMessage);
+      socket.off('message-deleted');
+      socket.off('user-typing', handleTypingIndicator);
+      socket.off('channel-event', handleChannelEvent);
       
       // Clear all typing timers
       typingTimers.current.forEach(timer => clearTimeout(timer));
@@ -209,10 +219,11 @@ export function useRealtimeMessages({
   }, [
     channelId,
     isConnected,
-    subscribe,
+    socket,
     handleChannelMessage,
     handleTypingIndicator,
     handleChannelEvent,
+    onMessageDeleted,
   ]);
 
   return {

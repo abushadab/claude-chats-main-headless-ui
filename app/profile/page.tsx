@@ -6,11 +6,11 @@ import { ProfilePage } from "@/components/ProfilePage"
 import Image from "next/image"
 import { Bell } from "lucide-react"
 import { useState } from "react"
-import { useRealtime } from "@/contexts/RealtimeContext"
+import { useWebSocket } from "@/contexts/WebSocketContext"
 
 export default function ProfileRoute() {
   const [unreadCount, setUnreadCount] = useState(2)
-  const { onlineCount, isConnected } = useRealtime()
+  const { onlineCount, isConnected } = useWebSocket()
 
   return (
     <div className="h-screen flex flex-col w-full bg-background overflow-hidden">

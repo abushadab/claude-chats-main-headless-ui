@@ -142,3 +142,6 @@ storybook-static/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Backend AI Agent files (temporary)
+from-backend-ai-agent/

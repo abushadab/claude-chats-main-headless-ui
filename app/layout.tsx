@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Providers } from "./providers"
 import { AuthProvider } from "@/contexts/AuthContext"
-import { RealtimeProvider } from "@/contexts/RealtimeContext"
+import { WebSocketProvider } from "@/contexts/WebSocketContext"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,11 +24,11 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <AuthProvider>
-          <RealtimeProvider>
+          <WebSocketProvider>
             <Providers>
               {children}
             </Providers>
-          </RealtimeProvider>
+          </WebSocketProvider>
         </AuthProvider>
       </body>
     </html>

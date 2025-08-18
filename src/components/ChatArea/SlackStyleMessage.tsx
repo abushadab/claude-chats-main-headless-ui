@@ -166,10 +166,10 @@ export function SlackStyleMessage({
         )}
 
         {/* Thread preview if exists */}
-        {message.thread_count && Number(message.thread_count) > 0 && (
+        {(message.thread_count > 0 || (typeof message.thread_count === 'string' && Number(message.thread_count) > 0)) && (
           <button className="mt-1 text-xs text-primary hover:underline flex items-center gap-1">
             <Reply className="h-3 w-3" />
-            {message.thread_count} {message.thread_count === 1 ? 'reply' : 'replies'}
+            {message.thread_count} {Number(message.thread_count) === 1 ? 'reply' : 'replies'}
           </button>
         )}
       </div>

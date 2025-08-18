@@ -8,7 +8,7 @@ import { ChatArea } from "@/components/ChatArea"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import { useProjects } from "@/hooks/useProjects"
 import { useProjectMembers } from "@/hooks/useProjectMembers"
-import { useRealtime } from "@/contexts/RealtimeContext"
+import { useWebSocket } from "@/contexts/WebSocketContext"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
 import { notFound, useRouter } from "next/navigation"
 import type { Project } from "@/types/project.types"
@@ -37,7 +37,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
   const { projects } = useProjects() // For sidebar display and default redirect
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
-  const { onlineCount, isConnected, connectionStatus } = useRealtime()
+  const { onlineCount, isConnected, connectionStatus } = useWebSocket()
   
   const [workspaceData, setWorkspaceData] = useState<WorkspaceResponse | null>(null)
   const workspaceDataRef = useRef<WorkspaceResponse | null>(null)
