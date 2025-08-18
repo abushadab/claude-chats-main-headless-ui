@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { Database, RefreshCw, Trash2, Eye, EyeOff } from "lucide-react";
+import { Database, RefreshCw, Trash2, Eye, EyeOff, Terminal } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { EnhancedCacheDebugger } from "@/components/EnhancedCacheDebugger";
 import { cache } from "@/lib/cache";
+import { logger, LogCategories } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 
 export function DeveloperTools() {
@@ -17,7 +18,9 @@ export function DeveloperTools() {
     channelsCacheEnabled: false,
     membersCacheEnabled: false,
     workspaceCacheEnabled: false,
+    consoleLogsEnabled: false,
   });
+  const [logCategories, setLogCategories] = useState<string[]>([]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -29,7 +32,9 @@ export function DeveloperTools() {
           channelsCacheEnabled: cache.isChannelsCacheEnabled(),
           membersCacheEnabled: cache.isMembersCacheEnabled(),
           workspaceCacheEnabled: cache.isWorkspaceCacheEnabled(),
+          consoleLogsEnabled: logger.isEnabled(),
         });
+        setLogCategories(logger.getCategories());
       } catch (error) {
         console.warn('Failed to load cache settings:', error);
       }
@@ -58,7 +63,28 @@ export function DeveloperTools() {
       cache.setMembersCacheEnabled(value);
     } else if (key === 'workspaceCacheEnabled') {
       cache.setWorkspaceCacheEnabled(value);
+    } else if (key === 'consoleLogsEnabled') {
+      logger.setEnabled(value);
+      toast({
+        title: value ? "Console Logs Enabled" : "Console Logs Disabled",
+        description: value ? "Developer logs will be shown in console" : "Developer logs are now hidden",
+      });
     }
+  };
+
+  const handleLogCategoryToggle = (category: string) => {
+    let newCategories: string[];
+    if (category === 'all') {
+      newCategories = ['all'];
+    } else {
+      if (logCategories.includes(category)) {
+        newCategories = logCategories.filter(c => c !== category && c !== 'all');
+      } else {
+        newCategories = [...logCategories.filter(c => c !== 'all'), category];
+      }
+    }
+    setLogCategories(newCategories);
+    logger.setCategories(newCategories);
   };
 
   const handleClearCache = (cacheType: 'all' | 'projects' | 'channels' | 'members' | 'workspace') => {
@@ -220,6 +246,51 @@ export function DeveloperTools() {
                   onClear={() => handleClearCache('workspace')}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Console Logging Settings */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h2 className="text-lg font-medium text-foreground mb-4 flex items-center">
+              <Terminal className="h-5 w-5 text-primary mr-2" />
+              Console Logging
+            </h2>
+            
+            <div className="space-y-1">
+              <SettingItem
+                label="Enable Console Logs"
+                description="Show developer logs in browser console"
+                checked={settings.consoleLogsEnabled}
+                onChange={(checked) => handleSettingChange('consoleLogsEnabled', checked)}
+              />
+              
+              {settings.consoleLogsEnabled && (
+                <div className="pl-8 mt-4">
+                  <div className="text-sm font-medium text-foreground mb-2">Log Categories</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={logCategories.includes('all') ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleLogCategoryToggle('all')}
+                      className="h-7 text-xs"
+                    >
+                      All
+                    </Button>
+                    {Object.entries(LogCategories).map(([key, value]) => (
+                      <Button
+                        key={value}
+                        variant={logCategories.includes(value) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleLogCategoryToggle(value)}
+                        className="h-7 text-xs"
+                        disabled={logCategories.includes('all')}
+                      >
+                        {key.charAt(0) + key.slice(1).toLowerCase()}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

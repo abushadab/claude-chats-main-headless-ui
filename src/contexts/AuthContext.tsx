@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import authService from '@/services/auth.service';
+import { logger } from '@/lib/logger';
 import type {
   User,
   AuthState,
@@ -286,7 +287,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }));
         
         // Optionally show success message
-        console.log('Password changed successfully');
+        logger.info('auth', 'Password changed successfully');
       } else {
         setState(prev => ({
           ...prev,

@@ -10,6 +10,7 @@ import { useProjects } from "@/hooks/useProjects"
 import { useProjectMembers } from "@/hooks/useProjectMembers"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { workspaceService, type WorkspaceResponse } from "@/services/workspace.service"
+import { logger } from "@/lib/logger"
 import { notFound, useRouter } from "next/navigation"
 import type { Project } from "@/types/project.types"
 import type { Channel } from "@/types/chat.types"
@@ -149,7 +150,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
                   // Check if channels cache already exists
                   if (!cache.has(channelsCacheKey, 'channels')) {
                     cache.set(channelsCacheKey, parsed.data.channels, 5 * 60 * 1000, 'channels');
-                    console.log('💾 Cached channels from workspace cache for project:', parsed.data.project.project_id);
+                    logger.info('cache', '💾 Cached channels from workspace cache for project:', parsed.data.project.project_id);
                   }
                 }
               }
@@ -191,7 +192,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         if (cache.isChannelsCacheEnabled() && data.channels && data.project?.project_id) {
           const channelsCacheKey = `${CACHE_KEYS.CHANNELS_PREFIX}${data.project.project_id}`;
           cache.set(channelsCacheKey, data.channels, 5 * 60 * 1000, 'channels'); // 5 min TTL
-          console.log('💾 Cached channels from workspace API for project:', data.project.project_id);
+          logger.info('cache', '💾 Cached channels from workspace API for project:', data.project.project_id);
         }
         
         // Handle smart fallback from backend
@@ -261,7 +262,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
       return displayData;
     }
     
-    console.log(`[Render ${renderCount.current}] Building UI from cache for:`, projectSlug, channelSlug);
+    logger.debug('component', `[Render ${renderCount.current}] Building UI from cache for:`, projectSlug, channelSlug);
     // Always try to build workspace data from cached projects and channels
     
     let fallbackData = null;
@@ -273,7 +274,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
         const cachedProjectsStr = localStorage.getItem(projectsCacheKey);
         const cachedProjects = cachedProjectsStr ? JSON.parse(cachedProjectsStr).data : null;
         
-        console.log('Cached projects found:', cachedProjects?.length || 0);
+        logger.debug('cache', 'Cached projects found:', cachedProjects?.length || 0);
         
         // Handle "default" project slug - but check if it's a real project first
         const project = cachedProjects?.find(p => p.slug === projectSlug);
@@ -284,7 +285,7 @@ function ChannelPageContent({ projectSlug, channelSlug }: { projectSlug: string,
           // console.log('Using default data for placeholder redirect');
           fallbackData = defaultData;
         } else if (project) {
-          console.log('Found project:', project.name, 'with ID:', project.project_id);
+          logger.debug('cache', 'Found project:', project.name, 'with ID:', project.project_id);
           
           // Get channels for this specific project
           const channelsCacheKey = `claude_chat_channels_${project.project_id}`;

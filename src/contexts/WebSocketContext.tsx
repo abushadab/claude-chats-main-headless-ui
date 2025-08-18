@@ -5,6 +5,7 @@ import { useSocket, ConnectionStatus } from '@/hooks/useSocket';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Socket } from 'socket.io-client';
+import { logger } from '@/lib/logger';
 
 interface UserPresence {
   userId: string;
@@ -73,7 +74,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (!socket) return;
 
     const handlePresenceChanged = (data: any) => {
-      console.log('[WebSocketContext] Presence update:', data);
+      logger.debug('websocket', '[WebSocketContext] Presence update:', data);
       
       if (data.status === 'online' || data.status === 'away' || data.status === 'busy') {
         setOnlineUsers(prev => {
@@ -124,7 +125,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const joinChannels = useCallback((channelIds: string[]) => {
     if (!socket || !connected) return;
 
-    console.log('[WebSocketContext] Joining channels:', channelIds);
+      logger.info('websocket', '[WebSocketContext] Joining channels:', channelIds);
     // Backend expects the array directly
     socket.emit('join-channels', channelIds);
   }, [socket, connected]);
@@ -133,7 +134,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const updatePresence = useCallback((status: 'online' | 'away' | 'busy' | 'offline') => {
     if (!socket || !connected) return;
 
-    console.log('[WebSocketContext] Updating presence:', status);
+      logger.info('websocket', '[WebSocketContext] Updating presence:', status);
     socket.emit('presence-update', { status });
   }, [socket, connected]);
 

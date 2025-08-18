@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { logger } from '@/lib/logger';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
 
@@ -54,11 +55,11 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
 
   useEffect(() => {
     if (!token) {
-      console.log('🔌 No token provided, skipping socket connection');
+      logger.info('websocket', '🔌 No token provided, skipping socket connection');
       return;
     }
 
-    console.log('🔌 Initializing socket connection...');
+    logger.info('websocket', '🔌 Initializing socket connection...');
     setConnectionStatus('connecting');
 
     const newSocket = io(defaultOptions.url, {
@@ -71,13 +72,13 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
       forceNew: true
     });
 
-    // Uncomment for debugging WebSocket events
-    // newSocket.onAny((eventName: string, ...args: any[]) => {
-    //   console.log('🔵 WebSocket Event:', eventName, args);
-    // });
+    // Debug all WebSocket events when logging is enabled
+    newSocket.onAny((eventName: string, ...args: any[]) => {
+      logger.debug('websocket', `🔵 WebSocket Event: ${eventName}`, args);
+    });
 
     newSocket.on('connect', () => {
-      console.log('✅ Socket connected:', newSocket.id);
+      logger.info('websocket', '✅ Socket connected:', newSocket.id);
       setConnected(true);
       setReconnecting(false);
       setError(null);
@@ -91,11 +92,11 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
     });
 
     newSocket.on('connected', (data) => {
-      console.log('✅ Authentication successful:', data);
+      logger.info('websocket', '✅ Authentication successful:', data);
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('❌ Socket connection failed:', err);
+      logger.error('websocket', '❌ Socket connection failed:', err);
       setError({
         type: 'connection',
         message: err.message || 'Connection failed'
@@ -105,20 +106,20 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
     });
 
     newSocket.on('reconnect_attempt', (attempt) => {
-      console.log(`🔄 Reconnection attempt ${attempt}...`);
+      logger.info('websocket', `🔄 Reconnection attempt ${attempt}...`);
       setReconnecting(true);
       setConnectionStatus('reconnecting');
     });
 
     newSocket.on('reconnect', (attempt) => {
-      console.log(`✅ Reconnected after ${attempt} attempts`);
+      logger.info('websocket', `✅ Reconnected after ${attempt} attempts`);
       setReconnecting(false);
       setError(null);
       setConnectionStatus('connected');
     });
 
     newSocket.on('reconnect_failed', () => {
-      console.error('❌ Reconnection failed');
+      logger.error('websocket', '❌ Reconnection failed');
       setReconnecting(false);
       setError({
         type: 'reconnection',
@@ -128,21 +129,21 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
+      logger.info('websocket', '❌ Socket disconnected:', reason);
       setConnected(false);
       setConnectionStatus('disconnected');
       cleanup();
 
       if (reason === 'io server disconnect') {
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Attempting manual reconnection...');
+          logger.info('websocket', '🔄 Attempting manual reconnection...');
           newSocket.connect();
         }, 2000);
       }
     });
 
     newSocket.on('error', (serverError: any) => {
-      console.error('🚨 Server error:', serverError);
+      logger.error('websocket', '🚨 Server error:', serverError);
       setError({
         type: serverError.type || 'server',
         message: serverError.message || 'Server error occurred'
@@ -156,13 +157,13 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
     });
 
     newSocket.on('pong', (data) => {
-      console.log('🏓 Pong received:', data);
+      logger.debug('websocket', '🏓 Pong received:', data);
     });
 
     setSocket(newSocket);
 
     return () => {
-      console.log('🧹 Cleaning up socket connection');
+      logger.info('websocket', '🧹 Cleaning up socket connection');
       cleanup();
       newSocket.close();
       setSocket(null);
@@ -173,14 +174,14 @@ export const useSocket = (token: string | null, options: UseSocketOptions = {}):
 
   const reconnect = useCallback(() => {
     if (socket && !connected) {
-      console.log('🔄 Manual reconnection triggered');
+      logger.info('websocket', '🔄 Manual reconnection triggered');
       socket.connect();
     }
   }, [socket, connected]);
 
   const disconnect = useCallback(() => {
     if (socket) {
-      console.log('👋 Manual disconnect triggered');
+      logger.info('websocket', '👋 Manual disconnect triggered');
       socket.disconnect();
     }
   }, [socket]);

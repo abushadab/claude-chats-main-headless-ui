@@ -3,6 +3,7 @@ import { useWebSocket } from '@/contexts/WebSocketContext';
 import { Message } from '@/types/chat.types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 interface UseWebSocketMessagesOptions {
   channelId: string;
@@ -42,7 +43,7 @@ export function useWebSocketMessages({
 
     // Listen for join confirmation
     socket.on('channel-joined', (data: any) => {
-      console.log('✅ Joined channel:', data);
+      logger.info('websocket', '✅ Joined channel:', data);
     });
 
     return () => {

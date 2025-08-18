@@ -6,6 +6,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { config } from '@/config';
 import authService from '@/services/auth.service';
+import { logger } from '@/lib/logger';
 
 // Create axios instance with default config
 const axiosInstance: AxiosInstance = axios.create({
@@ -49,15 +50,13 @@ axiosInstance.interceptors.request.use(
     // Add request ID for tracking (commented out due to CORS)
     // config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Log request in debug mode (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[API Request]', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        data: config.data,
-        params: config.params,
-      });
-    }
+    // Log request in debug mode
+    logger.debug('api', '[API Request]', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      data: config.data,
+      params: config.params,
+    });
     
     return config;
   },
@@ -71,13 +70,11 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     // Log response in debug mode
-    if (config.debug.enabled) {
-      console.log('[API Response]', {
-        url: response.config.url,
-        status: response.status,
-        data: response.data,
-      });
-    }
+    logger.debug('api', '[API Response]', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data,
+    });
     
     // Extract rate limit info if available
     const rateLimitHeaders = {
@@ -187,7 +184,7 @@ axiosInstance.interceptors.response.use(
     // Handle 429 Too Many Requests
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after'];
-      console.warn(`Rate limited. Retry after: ${retryAfter}s`);
+      logger.warn('api', `Rate limited. Retry after: ${retryAfter}s`);
       
       // Optionally implement automatic retry with exponential backoff
       if (originalRequest && !originalRequest._retry) {

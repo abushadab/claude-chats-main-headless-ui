@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageType } from "@/types/chat.types";
 import type { Message, Channel } from "@/types/chat.types";
 import type { Project } from "@/types/project.types";
+import { logger } from "@/lib/logger";
 import { MessagesAreaSlack } from "./MessagesAreaSlack";
 import { DeleteConfirmationModal } from "./modals/DeleteConfirmationModal";
 import { ImageLightbox } from "./modals/ImageLightbox";
@@ -370,7 +371,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
           description: "Failed to send message. Please try again.",
           variant: "destructive",
         });
-        console.error('Failed to send message:', error);
+        logger.error('component', 'Failed to send message:', error);
       }
     }
   };
@@ -382,7 +383,7 @@ export function ChatArea({ selectedProjectId, selectedChannelId, initialChannel,
 
   // File download handler
   const handleFileDownload = (file: { name: string; type: string; size?: string }) => {
-    console.log('Downloading file:', file.name);
+    logger.info('component', 'Downloading file:', file.name);
   };
 
   // Check if user can edit/delete message
