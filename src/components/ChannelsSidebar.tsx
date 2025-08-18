@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/headless-scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CreateChannelModal } from "@/components/ChatArea/modals/CreateChannelModal";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 
 interface ChannelsSidebarProps {
   selectedProjectId: string;
@@ -45,7 +46,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   // Show members skeleton when: loading, initial load without data, or project is changing
   const shouldShowMembersSkeleton = isLoadingMembers === true || (!projectMembers && (isInitialLoad || isProjectChanging));
   
-  console.log('🔍 [ChannelsSidebar] Skeleton Logic:', {
+  logger.debug('component', '🔍 [ChannelsSidebar] Skeleton Logic:', {
     selectedProjectId,
     currentProjectId,
     isInitialLoad,
@@ -61,7 +62,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   
   // Track project changes and initial load
   React.useEffect(() => {
-    console.log('📊 [ChannelsSidebar] Project Change Effect:', {
+    logger.debug('component', '📊 [ChannelsSidebar] Project Change Effect:', {
       selectedProjectId,
       currentProjectId,
       changing: selectedProjectId !== currentProjectId,
@@ -69,11 +70,11 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
     });
     
     if (selectedProjectId && selectedProjectId !== currentProjectId) {
-      console.log('🔄 [ChannelsSidebar] Project changing from', currentProjectId, 'to', selectedProjectId);
+      logger.info('component', '🔄 [ChannelsSidebar] Project changing from', currentProjectId, 'to', selectedProjectId);
       setCurrentProjectId(selectedProjectId);
       setIsInitialLoad(false);
     } else if (currentProjectId === null && selectedProjectId) {
-      console.log('🎯 [ChannelsSidebar] Initial load for project:', selectedProjectId);
+      logger.info('component', '🎯 [ChannelsSidebar] Initial load for project:', selectedProjectId);
       setCurrentProjectId(selectedProjectId);
       setIsInitialLoad(false);
     }
@@ -81,7 +82,7 @@ export function ChannelsSidebar({ selectedProjectId, selectedChannelId, selected
   
   // Update previous channels when we get new data (even if empty)
   React.useEffect(() => {
-    console.log('📦 [ChannelsSidebar] Channels Update Effect:', {
+    logger.debug('component', '📦 [ChannelsSidebar] Channels Update Effect:', {
       projectChannelsCount: projectChannels.length,
       previousChannelsCount: previousChannels.length,
       timestamp: new Date().toISOString().split('T')[1]

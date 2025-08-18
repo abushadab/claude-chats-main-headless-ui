@@ -4,6 +4,7 @@ import { cache, CACHE_KEYS, CACHE_TTL, STALE_THRESHOLD } from '@/lib/cache';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Project, ActiveMember } from '@/types/project.types';
 import type { Channel } from '@/types/chat.types';
+import { logger } from '@/lib/logger';
 
 export function useProjects(lightweight = true) {
   const queryClient = useQueryClient();
@@ -21,13 +22,13 @@ export function useProjects(lightweight = true) {
     queryKey: ['projects', lightweight],
     enabled: Boolean(isAuthenticated && !isAuthLoading), // Only fetch when authenticated
     queryFn: async (): Promise<Project[]> => {
-      console.log('🔄 Fetching projects from API...');
+      logger.info('hook', '🔄 Fetching projects from API...');
       const data = await projectService.getProjects(lightweight);
       
       // Only cache if projects caching is enabled
       if (cache.isProjectsCacheEnabled()) {
         cache.set(cacheKey, data, CACHE_TTL.PROJECTS, 'projects');
-        console.log('💾 Projects cached in localStorage');
+        logger.debug('cache', '💾 Projects cached in localStorage');
       }
       
       return data;
@@ -39,11 +40,11 @@ export function useProjects(lightweight = true) {
     initialData: () => {
       const cachedData = cache.get<Project[]>(cacheKey, 'projects');
       if (cachedData) {
-        console.log('🗂️ Loading projects from localStorage cache');
+        logger.debug('cache', '🗂️ Loading projects from localStorage cache');
         // Trigger background refetch if cache is stale
         const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECTS);
         if (isStale) {
-          console.log('📡 Cache is stale, will refetch in background');
+          logger.debug('cache', '📡 Cache is stale, will refetch in background');
           // Use setTimeout to avoid blocking initial render
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['projects', lightweight] });
@@ -79,7 +80,7 @@ export function useProjects(lightweight = true) {
 
   // Provide cache refresh method
   const refreshProjects = async () => {
-    console.log('🔄 Force refreshing projects...');
+    logger.info('hook', '🔄 Force refreshing projects...');
     cache.remove(cacheKey);
     await refetch();
   };
@@ -131,12 +132,12 @@ export function useProject(projectSlug: string, includes?: string[]) {
         throw new Error('Project slug is required');
       }
       
-      console.log('🔄 Fetching project from API...', projectSlug);
+      logger.info('hook', '🔄 Fetching project from API...', projectSlug);
       const data = await projectService.getProjectBySlug(projectSlug, includes);
       
       // Cache in localStorage with TTL
       cache.set(cacheKey, data, CACHE_TTL.PROJECT, 'projects');
-      console.log('💾 Project cached in localStorage');
+      logger.debug('cache', '💾 Project cached in localStorage');
       
       return data;
     },
@@ -150,11 +151,11 @@ export function useProject(projectSlug: string, includes?: string[]) {
       
       const cachedData = cache.get<any>(cacheKey, 'projects');
       if (cachedData) {
-        console.log('🗂️ Loading project from localStorage cache');
+        logger.debug('cache', '🗂️ Loading project from localStorage cache');
         // Trigger background refetch if cache is stale
         const isStale = cache.isStale(cacheKey, STALE_THRESHOLD.PROJECT);
         if (isStale) {
-          console.log('📡 Project cache is stale, will refetch in background');
+          logger.debug('cache', '📡 Project cache is stale, will refetch in background');
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['project', projectSlug, includesKey] });
           }, 100);
@@ -194,7 +195,7 @@ export function useProject(projectSlug: string, includes?: string[]) {
 
   // Provide cache refresh method
   const refreshProject = async () => {
-    console.log('🔄 Force refreshing project...');
+    logger.info('hook', '🔄 Force refreshing project...');
     cache.remove(cacheKey);
     await refetch();
   };

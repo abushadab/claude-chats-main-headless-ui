@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { projectsService } from '@/services/projects.service';
 import { cache, CACHE_KEYS } from '@/lib/cache';
 import type { ProjectMember } from '@/types/project.types';
+import { logger } from '@/lib/logger';
 
 interface UseProjectMembersReturn {
   members: ProjectMember[];
@@ -42,7 +43,7 @@ export function useProjectMembers(projectId: string | undefined): UseProjectMemb
         const cachedMembers = cache.get<ProjectMember[]>(cacheKey, 'members');
         
         if (cachedMembers) {
-          console.log('💾 Using cached members for project:', projectId);
+          logger.debug('cache', '💾 Using cached members for project:', projectId);
           setMembers(cachedMembers);
           setIsLoading(false);
           return;
@@ -50,14 +51,14 @@ export function useProjectMembers(projectId: string | undefined): UseProjectMemb
       }
 
       // Fetch from API
-      console.log('🔄 Fetching members from API for project:', projectId);
+      logger.info('hook', '🔄 Fetching members from API for project:', projectId);
       const fetchedMembers = await projectsService.getProjectMembers(projectId);
       
       // Cache the members if members caching is enabled
       if (cache.isMembersCacheEnabled() && fetchedMembers) {
         const cacheKey = `${CACHE_KEYS.MEMBERS_PREFIX}${projectId}`;
         cache.set(cacheKey, fetchedMembers, 10 * 60 * 1000, 'members'); // 10 min TTL
-        console.log('💾 Cached members for project:', projectId);
+        logger.debug('cache', '💾 Cached members for project:', projectId);
       }
 
       setMembers(fetchedMembers);
