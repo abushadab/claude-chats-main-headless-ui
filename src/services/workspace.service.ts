@@ -6,6 +6,7 @@
 import axios from '@/lib/axios';
 import { config } from '@/config';
 import type { Project, Channel, Message, ActiveMember, User } from '@/types';
+import { logger } from '@/lib/logger';
 
 export interface WorkspaceResponse {
   success: boolean;
@@ -63,10 +64,26 @@ class WorkspaceService {
       if (options?.limit) params.set('limit', options.limit.toString());
       if (options?.before) params.set('before', options.before);
       if (options?.after) params.set('after', options.after);
-
-      const url = `${this.baseUrl}/${projectSlug}/${channelSlug}${params.toString() ? '?' + params.toString() : ''}`;
       
-      const response = await axios.get<WorkspaceResponse>(url);
+      // Add timestamp to prevent caching
+      params.set('_t', Date.now().toString());
+
+      const url = `${this.baseUrl}/${projectSlug}/${channelSlug}?${params.toString()}`;
+      
+      // Add cache-busting headers
+      const response = await axios.get<WorkspaceResponse>(url, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      logger.debug('api', 'Workspace API response received', { 
+        projectSlug, 
+        channelSlug, 
+        timestamp: Date.now() 
+      });
       
       if (response.data.success) {
         return response.data;
@@ -74,7 +91,7 @@ class WorkspaceService {
       
       throw new Error('Failed to fetch workspace data');
     } catch (error: any) {
-      console.error('Error fetching workspace:', error);
+      logger.error('api', 'Error fetching workspace:', error);
       throw new Error(error.response?.data?.error?.message || 'Failed to fetch workspace');
     }
   }
